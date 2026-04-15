@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elemzések - ReviewAgent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans flex min-h-screen">
+
+    <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex">
+        <div class="p-6 text-2xl font-bold text-white border-b border-slate-800">
+            <i class="fa-solid fa-robot text-blue-500"></i> ReviewAgent
+        </div>
+        <nav class="flex-1 p-4 space-y-2 mt-4">
+            <a href="dashboard.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-house"></i> Irányítópult
+            </a>
+            <a href="reviews.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-comments"></i> Vélemények
+            </a>
+            <a href="analytics.html" class="flex items-center gap-3 p-3 bg-blue-600 rounded-lg text-white">
+                <i class="fa-solid fa-chart-simple"></i> Elemzések
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-gear"></i> Beállítások
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col p-8 space-y-8 overflow-y-auto">
+        <header>
+            <h1 class="text-3xl font-bold">Üzleti Elemzések</h1>
+            <p class="text-slate-400">AI alapú stratégiai jelentés az ügyfélvisszajelzések alapján</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                <h3 class="text-lg font-bold mb-4">Értékelések eloszlása</h3>
+                <div class="h-64">
+                    <canvas id="ratingChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-6 rounded-xl border border-blue-500/30 shadow-xl flex flex-col">
+                <h3 class="text-lg font-bold mb-4 text-blue-400">
+                    <i class="fa-solid fa-brain mr-2"></i> AI Vezetői Összefoglaló
+                </h3>
+                <div id="aiReportBox" class="text-slate-300 leading-relaxed italic whitespace-pre-line flex-1">
+                    Elemzés generálása folyamatban...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/analytics');
+                const data = await response.json();
+
+                // 1. AI Jelentés betöltése
+                document.getElementById('aiReportBox').innerText = data.ai_report;
+
+                // 2. Grafikon kirajzolása
+                const ctx = document.getElementById('ratingChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['1★', '2★', '3★', '4★', '5★'],
+                        datasets: [{
+                            label: 'Vélemények száma',
+                            data: [
+                                data.ratings[1] || 0, 
+                                data.ratings[2] || 0, 
+                                data.ratings[3] || 0, 
+                                data.ratings[4] || 0, 
+                                data.ratings[5] || 0
+                            ],
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#334155' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Hiba:", error);
+                document.getElementById('aiReportBox').innerText = "Hiba történt az elemzés során.";
+            }
+        }
+
+        window.onload = loadAnalytics;
+    </script>
+</body>
+</html>

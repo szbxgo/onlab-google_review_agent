@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewAgent AI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans flex min-h-screen">
+
+    <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex">
+        <div class="p-6 text-2xl font-bold text-white flex items-center gap-2 border-b border-slate-800">
+            <i class="fa-solid fa-robot text-blue-500"></i> ReviewAgent
+        </div>
+        <nav class="flex-1 p-4 space-y-2 mt-4">
+            <a href="#" class="flex items-center gap-3 p-3 bg-blue-600 rounded-lg text-white">
+                <i class="fa-solid fa-house"></i> Irányítópult
+            </a>
+            <a href="reviews.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-comments"></i> Vélemények
+            </a>
+            <a href="analytics.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-chart-simple"></i> Elemzések
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-gear"></i> Beállítások
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+            <div class="flex items-center gap-3 p-2 text-sm text-slate-400">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">JI</div>
+                <span>Jóri István</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-8">
+            <h1 class="text-xl font-semibold">Irányítópult</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Qdrant Online</span>
+                <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Gemini API Aktív</span>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8 overflow-y-auto">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Összes vélemény</p>
+                    <h2 id="totalReviews" class="text-3xl font-bold mt-1">128</h2>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">AI válaszok aránya</p>
+                    <h2 class="text-3xl font-bold mt-1 text-blue-400">92%</h2>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <p class="text-slate-400 text-sm">Ügyfél elégedettség</p>
+                    <h2 class="text-3xl font-bold mt-1 text-yellow-400">4.9 ★</h2>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-2xl">
+                <div class="p-6 border-b border-slate-700 bg-slate-800/50">
+                    <h3 class="text-lg font-bold">Új válasz generálása</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <label class="block text-sm text-slate-400">Másold be az ügyfél véleményét:</label>
+                    <textarea id="reviewInput" class="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-4 text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Pl.: Nagyon elégedett voltam a vízszereléssel..."></textarea>
+                    
+                    <button onclick="generateResponse()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Válasz Generálása
+                    </button>
+                </div>
+            </div>
+
+            <div id="aiResult" class="bg-slate-800 rounded-xl border border-blue-500/30 p-6 space-y-4">
+                <h3 class="font-bold text-blue-400 flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i> AI Javaslat:
+                </h3>
+                <div id="aiResultContent" class="bg-slate-900 p-4 rounded border border-slate-700 italic text-slate-300">
+                    Itt fog megjelenni a Gemini által generált válasz, amit Jóri István stílusában készítünk el a RAG technológiával.
+                </div>
+                <div class="flex gap-3">
+                    <button class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded transition">Másolás</button>
+                    <button class="text-xs bg-green-600 hover:bg-green-500 px-4 py-2 rounded transition text-white">Jóváhagyás & Beküldés</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+    const API_URL = "http://127.0.0.1:8000"; // A FastAPI alapértelmezett címe
+
+    // 1. Statisztikák betöltése az oldal indulásakor
+    async function loadStats() {
+        try {
+            const response = await fetch(`${API_URL}/stats`);
+            const data = await response.json();
+            // Itt frissítjük a HTML-ben a számokat (adjunk ID-t a kártyának a HTML-ben)
+            document.getElementById('totalReviews').innerText = data.total_reviews;
+        } catch (error) {
+            console.error("Nem sikerült betölteni a statisztikákat:", error);
+        }
+    }
+
+    // 2. AI Válasz generálása
+    async function generateResponse() {
+        const reviewText = document.getElementById('reviewInput').value;
+        const resultDiv = document.getElementById('aiResult');
+        const resultContent = document.getElementById('aiResultContent');
+        const genButton = document.querySelector('button[onclick="generateResponse()"]');
+
+        if (!reviewText) {
+            alert("Kérlek, írj be egy véleményt!");
+            return;
+        }
+
+        // Töltés jelzése
+        genButton.disabled = true;
+        genButton.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Generálás...';
+        resultContent.innerText = "A Gemini éppen a válaszon dolgozik...";
+
+        try {
+            const response = await fetch(`${API_URL}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ review_text: reviewText })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Megjelenítjük az eredményt
+                resultContent.innerText = data.answer;
+                resultDiv.classList.remove('opacity-50'); // Ha esetleg halványítottad volna
+            } else {
+                throw new Error(data.detail || "Hiba történt");
+            }
+
+        } catch (error) {
+            alert("Hiba: " + error.message);
+            resultContent.innerText = "Sajnos hiba történt a generálás során.";
+        } finally {
+            // Gomb visszaállítása
+            genButton.disabled = false;
+            genButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Válasz Generálása';
+        }
+    }
+
+    // Indításkor töltsük be a statisztikákat
+    window.onload = loadStats;
+</script>
+</body>
+</html>

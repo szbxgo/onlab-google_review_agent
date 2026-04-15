@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vélemények - ReviewAgent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans flex min-h-screen">
+
+    <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex">
+        <div class="p-6 text-2xl font-bold text-white flex items-center gap-2 border-b border-slate-800">
+            <i class="fa-solid fa-robot text-blue-500"></i> ReviewAgent
+        </div>
+        <nav class="flex-1 p-4 space-y-2 mt-4">
+            <a href="dashboard.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-house"></i> Irányítópult
+            </a>
+            <a href="reviews.html" class="flex items-center gap-3 p-3 bg-blue-600 rounded-lg text-white">
+                <i class="fa-solid fa-comments"></i> Vélemények
+            </a>
+            <a href="analytics.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-chart-simple"></i> Elemzések
+            </a>
+            <a href="#" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-gear"></i> Beállítások
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center px-8">
+            <h1 class="text-xl font-semibold">Összes vélemény</h1>
+        </header>
+
+        <div class="p-8">
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-950 text-slate-400 text-sm uppercase">
+                        <tr>
+                            <th class="p-4 border-b border-slate-700">Felhasználó</th>
+                            <th class="p-4 border-b border-slate-700 w-1/2">Vélemény szövege</th>
+                            <th class="p-4 border-b border-slate-700 text-center">Értékelés</th>
+                            <th class="p-4 border-b border-slate-700">Művelet</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewsTableBody">
+                        <tr>
+                            <td colspan="4" class="p-8 text-center text-slate-500">Adatok betöltése...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadReviews() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/all-reviews');
+                const data = await response.json();
+                
+                const tableBody = document.getElementById('reviewsTableBody');
+                tableBody.innerHTML = ''; // Ürítjük a "Betöltés..." szöveget
+
+                data.forEach(item => {
+                    const row = `
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+                            <td class="p-4 font-medium text-blue-400">${item.Author_Name || 'Vendég'}</td>
+                            <td class="p-4 text-sm text-slate-300 leading-relaxed">${item.Review_Text}</td>
+                            <td class="p-4 text-center">
+                                <span class="bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded text-xs font-bold">
+                                    ${item.Review_Rating} ★
+                                </span>
+                            </td>
+                            <td class="p-4 text-sm">
+                                <button class="text-slate-400 hover:text-white transition">Válasz írása</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("Hiba:", error);
+                document.getElementById('reviewsTableBody').innerHTML = '<tr><td colspan="4" class="p-8 text-center text-red-400">Hiba történt az adatok betöltésekor!</td></tr>';
+            }
+        }
+
+        window.onload = loadReviews;
+    </script>
+</body>
+</html>
