@@ -21,8 +21,11 @@ app.add_middleware(
 URL = "https://8b1ea742-86f3-4e19-a534-329ee60572d7.eu-central-1-0.aws.cloud.qdrant.io"
 API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.-0df-CLPC0u4MOKoOAS8aGb7MZpb8zkCYCfDW-zM0Mw"
 COLLECTION_NAME = "first_reviews"
-GEMINI_API_KEY = "AIzaSyA3FllkABTFs5nc9hsV9WiDJPSwjzROy9w" # Használj környezeti változót élesben!
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+if not GEMINI_API_KEY:
+    print("Hiba: Nincs beállítva Gemini API Kulcs környezeti változója.")
+    
 # Modellek betöltése egyszer az induláskor
 client = QdrantClient(url=URL, api_key=API_KEY)
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
