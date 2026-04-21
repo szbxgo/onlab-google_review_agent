@@ -18,8 +18,8 @@ app.add_middleware(
 )
 
 # --- Konfiguráció ---
-URL = "https://8b1ea742-86f3-4e19-a534-329ee60572d7.eu-central-1-0.aws.cloud.qdrant.io"
-API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.-0df-CLPC0u4MOKoOAS8aGb7MZpb8zkCYCfDW-zM0Mw"
+URL = os.getenv("QDRANT_URL")
+API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "first_reviews"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
