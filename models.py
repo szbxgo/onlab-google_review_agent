@@ -15,6 +15,7 @@ class Business(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String, nullable=False)
     google_id = Column(String, unique=True)
+    email = Column(String, unique=True, index=True)
     style_guideline = Column(Text) # Pl: "Barátságos, tegező, rövid válaszok"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

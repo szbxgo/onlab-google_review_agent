@@ -93,14 +93,20 @@
 
     <script>
     const API_URL = "http://127.0.0.1:8000"; // A FastAPI alapértelmezett címe
+    const BUSINESS_ID = localStorage.getItem('business_id');
+    const BUSINESS_NAME = localStorage.getItem('business_name');
+    if (!BUSINESS_ID) {
+    window.location.href = 'login.html'; // Ha nincs belépve, irány a login
+    }
 
     // 1. Statisztikák betöltése az oldal indulásakor
     async function loadStats() {
         try {
-            const response = await fetch(`${API_URL}/stats`);
+            const response = await fetch(`${API_URL}/stats/${BUSINESS_ID}`);
             const data = await response.json();
             // Itt frissítjük a HTML-ben a számokat (adjunk ID-t a kártyának a HTML-ben)
             document.getElementById('totalReviews').innerText = data.total_reviews;
+            document.querySelector('.text-xl.font-semibold').innerText = `${BUSINESS_NAME} - Dashboard`;
         } catch (error) {
             console.error("Nem sikerült betölteni a statisztikákat:", error);
         }
@@ -127,7 +133,10 @@
             const response = await fetch(`${API_URL}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ review_text: reviewText })
+                body: JSON.stringify({ 
+                review_text: reviewText,
+                business_id: BUSINESS_ID // Elküldjük a cég azonosítóját!
+                })
             });
 
             const data = await response.json();

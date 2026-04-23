@@ -58,8 +58,9 @@
     <script>
         async function loadReviews() {
             try {
-                const response = await fetch('http://127.0.0.1:8000/all-reviews');
+                const response = await fetch(`http://127.0.0.1:8000/all-reviews/${BUSINESS_ID}`);
                 const data = await response.json();
+                const BUSINESS_ID = 1;
                 
                 const tableBody = document.getElementById('reviewsTableBody');
                 tableBody.innerHTML = ''; // Ürítjük a "Betöltés..." szöveget

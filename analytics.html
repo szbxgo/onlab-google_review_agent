@@ -58,7 +58,8 @@
     <script>
         async function loadAnalytics() {
             try {
-                const response = await fetch('http://127.0.0.1:8000/analytics');
+                const BUSINESS_ID = 1;
+                const response = await fetch(`http://127.0.0.1:8000/analytics/${BUSINESS_ID}`);
                 const data = await response.json();
 
                 // 1. AI Jelentés betöltése
