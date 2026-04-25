@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,6 +19,8 @@ from datetime import datetime, timedelta
 
 app = FastAPI()
 
+load_dotenv()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -30,6 +33,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "reviews"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
 
 # JWT token generálása
 def create_access_token(data: dict):
@@ -203,6 +210,7 @@ async def auth_google(business_id: int):
         f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
         f"&scope={scope}&access_type=offline&prompt=consent&state={business_id}"
     )
+    print(f"GENERÁLT LINK: {google_url}")
     return RedirectResponse(google_url)
 
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
