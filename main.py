@@ -203,27 +203,6 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
-# --- GOOGLE OAUTH2 FOLYAMAT ---
-# 1. Átirányítás a Google bejelentkezéshez
-@app.get("/auth/google/{business_id}")
-async def auth_google(business_id: int):
-    # Itt mondjuk meg a Google-nek, hogy mihez kérünk hozzáférést (scope)
-    # A 'business_management' kell a véleményekhez
-    scopes = [
-        "openid",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/business.manage"
-    ]
-    scope_param = " ".join(scopes)
-
-    google_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
-        f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
-        f"&scope={scope_param}&access_type=offline&prompt=consent&state={business_id}"
-    )
-    print(f"---GENERÁLT LINK: {google_url}")
-    return RedirectResponse(google_url)
-
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
 # 2. Google visszahívási végpont (ide érkezik meg a felhasználó)
 @app.get("/auth/google/callback")
@@ -253,6 +232,29 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         
         # 4. Visszaküldjük a frontendnek a tokent az URL-ben
         return RedirectResponse(url=f"http://127.0.0.1:5500/dashboard.html?token={access_token}&id={business.id}")
+
+
+# --- GOOGLE OAUTH2 FOLYAMAT ---
+# 1. Átirányítás a Google bejelentkezéshez
+@app.get("/auth/google/{business_id}")
+async def auth_google(business_id: int):
+    # Itt mondjuk meg a Google-nek, hogy mihez kérünk hozzáférést (scope)
+    # A 'business_management' kell a véleményekhez
+    scopes = [
+        "openid",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/business.manage"
+    ]
+    scope_param = " ".join(scopes)
+
+    google_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
+        f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
+        f"&scope={scope_param}&access_type=offline&prompt=consent&state={business_id}"
+    )
+    print(f"---GENERÁLT LINK: {google_url}")
+    return RedirectResponse(google_url)
+
 
 #
 # 3. ÚJ VÉGPONT: Vélemények kézi frissítése a Google-ből
