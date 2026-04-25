@@ -33,9 +33,14 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "reviews"
+
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
 
 # JWT token generálása
@@ -210,7 +215,7 @@ async def auth_google(business_id: int):
         f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
         f"&scope={scope}&access_type=offline&prompt=consent&state={business_id}"
     )
-    print(f"GENERÁLT LINK: {google_url}")
+    print(f"---GENERÁLT LINK: {google_url}")
     return RedirectResponse(google_url)
 
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
