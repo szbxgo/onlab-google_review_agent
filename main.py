@@ -209,11 +209,17 @@ if __name__ == "__main__":
 async def auth_google(business_id: int):
     # Itt mondjuk meg a Google-nek, hogy mihez kérünk hozzáférést (scope)
     # A 'business_management' kell a véleményekhez
-    scope = "https://www.googleapis.com/auth/business_management"
+    scopes = [
+        "openid",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/business_management"
+    ]
+    scope_param = " ".join(scopes)
+
     google_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
         f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
-        f"&scope={scope}&access_type=offline&prompt=consent&state={business_id}"
+        f"&scope={scope_param}&access_type=offline&prompt=consent&state={business_id}"
     )
     print(f"---GENERÁLT LINK: {google_url}")
     return RedirectResponse(google_url)

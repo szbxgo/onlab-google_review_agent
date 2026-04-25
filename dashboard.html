@@ -110,7 +110,7 @@
     </main>
 
     <script>
-        const API_URL = "http://127.0.0.1:8000"; // A FastAPI alapértelmezett címe
+        const API_URL = "https://onlab-google-review-agent.onrender.com"; // A FastAPI alapértelmezett címe
 
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
@@ -223,7 +223,7 @@
         function connectGoogle() {
             const businessId = localStorage.getItem('business_id');
             // Elküldjük a felhasználót a backend auth végpontjára
-            window.location.href = `http://127.0.0.1:8000/auth/google/${businessId}`;
+            window.location.href = `https://onlab-google-review-agent.onrender.com/auth/google/${businessId}`;
         }
 
 
