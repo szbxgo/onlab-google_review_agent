@@ -15,6 +15,14 @@ class Business(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     name = Column(String, nullable=False)
     google_id = Column(String, unique=True)
+
+    # --- ÚJ MEZŐK AZ OAUTH2-HÖZ ---
+    google_access_token = Column(String, nullable=True)
+    google_refresh_token = Column(String, nullable=True)
+    google_account_id = Column(String, nullable=True) # A Google belső azonosítója a céghez
+    google_location_id = Column(String, nullable=True) # A konkrét üzlethelyiség azonosítója
+    # ------------------------------        
+
     email = Column(String, unique=True, index=True)
     style_guideline = Column(Text) # Pl: "Barátságos, tegező, rövid válaszok"
     created_at = Column(DateTime(timezone=True), server_default=func.now())

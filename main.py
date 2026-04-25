@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
@@ -9,6 +9,12 @@ from sqlalchemy.orm import Session
 from database import get_db, engine
 import models
 models.Base.metadata.create_all(bind=engine)
+
+import requests
+from fastapi.responses import RedirectResponse
+
+from jose import jwt
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -24,6 +30,24 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 COLLECTION_NAME = "reviews"
+
+# JWT token generálása
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+# 4. ÚJ VÉGPONT: Jelenlegi vállalkozás azonosító lekérése a tokenből (minden védett végpont ezt használja majd)
+async def get_current_business_id(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Nincs token!")
+    try:
+        token = authorization.split(" ")[1] # "Bearer <token>" formátum
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return int(payload.get("sub"))
+    except:
+        raise HTTPException(status_code=401, detail="Érvénytelen token!")
 
 # Kliensek inicializálása az új módon
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
@@ -41,7 +65,7 @@ def get_embedding(text):
     """Vektorizálás a 3072 dimenziós modellel"""
     # Ugyanaz a modell, amit a feltöltésnél használtál!
     result = gemini_client.models.embed_content(
-        model="gemini-embedding-2-preview", 
+        model="gemini-embedding-001", 
         contents=text
     )
     return result.embeddings[0].values
@@ -112,7 +136,10 @@ async def generate_response(request: ReviewRequest, db: Session = Depends(get_db
 
 # 1. Statisztikák (Dashboard-hoz)
 @app.get("/stats/{business_id}")
-async def get_stats(business_id: int, db: Session = Depends(get_db)):
+async def get_stats(business_id: int, current_id: int = Depends(get_current_business_id), db: Session = Depends(get_db)):
+    if business_id != current_id:
+        raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
+    
     total = db.query(models.Review).filter(models.Review.business_id == business_id).count()
     # Itt fix értékeket adunk, amíg nincs több adatunk
     return {
@@ -162,3 +189,64 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+# --- GOOGLE OAUTH2 FOLYAMAT ---
+# 1. Átirányítás a Google bejelentkezéshez
+@app.get("/auth/google/{business_id}")
+async def auth_google(business_id: int):
+    # Itt mondjuk meg a Google-nek, hogy mihez kérünk hozzáférést (scope)
+    # A 'business_management' kell a véleményekhez
+    scope = "https://www.googleapis.com/auth/business_management"
+    google_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code"
+        f"&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}"
+        f"&scope={scope}&access_type=offline&prompt=consent&state={business_id}"
+    )
+    return RedirectResponse(google_url)
+
+# A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
+# 2. Google visszahívási végpont (ide érkezik meg a felhasználó)
+@app.get("/auth/google/callback")
+async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
+    business_id = int(state)
+    
+    # Itt váltjuk be a kódot tokenekre
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+    
+    res = requests.post(token_url, data=data).json()
+    
+    # Mentjük a tokeneket az adatbázisba
+    business = db.query(models.Business).filter(models.Business.id == business_id).first()
+    if business:
+        business.google_refresh_token = res.get("refresh_token")
+        db.commit()
+        
+        # 3. GENERÁLUNK EGY SAJÁT JWT TOKENT
+        access_token = create_access_token(data={"sub": str(business.id)})
+        
+        # 4. Visszaküldjük a frontendnek a tokent az URL-ben
+        return RedirectResponse(url=f"http://127.0.0.1:5500/dashboard.html?token={access_token}&id={business.id}")
+
+#
+# 3. ÚJ VÉGPONT: Vélemények kézi frissítése a Google-ből
+@app.post("/sync-google-reviews/{business_id}")
+async def sync_reviews(business_id: int, db: Session = Depends(get_db)):
+    business = db.query(models.Business).filter(models.Business.id == business_id).first()
+    if not business or not business.google_refresh_token:
+        raise HTTPException(status_code=400, detail="Nincs Google kapcsolat.")
+    
+    # ITT FOG MEGTÖRTÉNNI A VARÁZSLAT:
+    # 1. Access token frissítése a refresh_tokennel
+    # 2. Vélemények letöltése a Google API-ról
+    # 3. db_feltoltes.py-ban lévő logic meghívása (vektorizálás + Qdrant)
+    
+    return {"message": "Szinkronizáció elindítva!"}
+

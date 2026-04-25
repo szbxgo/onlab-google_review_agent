@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-slate-900 text-slate-100 font-sans flex min-h-screen">
 
     <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex">
@@ -17,22 +19,19 @@
             <a href="#" class="flex items-center gap-3 p-3 bg-blue-600 rounded-lg text-white">
                 <i class="fa-solid fa-house"></i> Irányítópult
             </a>
-            <a href="reviews.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+            <a href="reviews.html"
+                class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
                 <i class="fa-solid fa-comments"></i> Vélemények
             </a>
-            <a href="analytics.html" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+            <a href="analytics.html"
+                class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
                 <i class="fa-solid fa-chart-simple"></i> Elemzések
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
+            <a href="#"
+                class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition">
                 <i class="fa-solid fa-gear"></i> Beállítások
             </a>
         </nav>
-        <div class="p-4 border-t border-slate-800">
-            <div class="flex items-center gap-3 p-2 text-sm text-slate-400">
-                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">JI</div>
-                <span>Jóri István</span>
-            </div>
-        </div>
     </aside>
 
     <main class="flex-1 flex flex-col">
@@ -42,10 +41,21 @@
                 <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Qdrant Online</span>
                 <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Gemini API Aktív</span>
             </div>
+
+            <div class="p-4 bg-blue-900/20 border border-blue-500/50 rounded-xl flex justify-between items-center">
+                <div>
+                    <h4 class="font-bold">Google Business Kapcsolat</h4>
+                    <p class="text-xs text-slate-400">Kapcsolja össze profilját az automatikus véleménykezeléshez.</p>
+                </div>
+                <button onclick="connectGoogle()"
+                    class="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition">
+                    <i class="fa-brands fa-google mr-2"></i> Összekapcsolás
+                </button>
+            </div>
         </header>
 
         <div class="p-8 space-y-8 overflow-y-auto">
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
                     <p class="text-slate-400 text-sm">Összes vélemény</p>
@@ -67,9 +77,12 @@
                 </div>
                 <div class="p-6 space-y-4">
                     <label class="block text-sm text-slate-400">Másold be az ügyfél véleményét:</label>
-                    <textarea id="reviewInput" class="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-4 text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Pl.: Nagyon elégedett voltam a vízszereléssel..."></textarea>
-                    
-                    <button onclick="generateResponse()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2">
+                    <textarea id="reviewInput"
+                        class="w-full h-32 bg-slate-900 border border-slate-700 rounded-lg p-4 text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Pl.: Nagyon elégedett voltam a vízszereléssel..."></textarea>
+
+                    <button onclick="generateResponse()"
+                        class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> AI Válasz Generálása
                     </button>
                 </div>
@@ -79,12 +92,17 @@
                 <h3 class="font-bold text-blue-400 flex items-center gap-2">
                     <i class="fa-solid fa-robot"></i> AI Javaslat:
                 </h3>
-                <div id="aiResultContent" class="bg-slate-900 p-4 rounded border border-slate-700 italic text-slate-300">
-                    Itt fog megjelenni a Gemini által generált válasz, amit Jóri István stílusában készítünk el a RAG technológiával.
+                <div id="aiResultContent"
+                    class="bg-slate-900 p-4 rounded border border-slate-700 italic text-slate-300">
+                    Itt fog megjelenni az AI által generált válasz, amit Jóri István stílusában készítünk el a RAG
+                    technológiával.
                 </div>
                 <div class="flex gap-3">
-                    <button class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded transition">Másolás</button>
-                    <button class="text-xs bg-green-600 hover:bg-green-500 px-4 py-2 rounded transition text-white">Jóváhagyás & Beküldés</button>
+                    <button
+                        class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded transition">Másolás</button>
+                    <button
+                        class="text-xs bg-green-600 hover:bg-green-500 px-4 py-2 rounded transition text-white">Jóváhagyás
+                        & Beküldés</button>
                 </div>
             </div>
 
@@ -92,75 +110,130 @@
     </main>
 
     <script>
-    const API_URL = "http://127.0.0.1:8000"; // A FastAPI alapértelmezett címe
-    const BUSINESS_ID = localStorage.getItem('business_id');
-    const BUSINESS_NAME = localStorage.getItem('business_name');
-    if (!BUSINESS_ID) {
-    window.location.href = 'login.html'; // Ha nincs belépve, irány a login
-    }
+        const API_URL = "http://127.0.0.1:8000"; // A FastAPI alapértelmezett címe
 
-    // 1. Statisztikák betöltése az oldal indulásakor
-    async function loadStats() {
-        try {
-            const response = await fetch(`${API_URL}/stats/${BUSINESS_ID}`);
-            const data = await response.json();
-            // Itt frissítjük a HTML-ben a számokat (adjunk ID-t a kártyának a HTML-ben)
-            document.getElementById('totalReviews').innerText = data.total_reviews;
-            document.querySelector('.text-xl.font-semibold').innerText = `${BUSINESS_NAME} - Dashboard`;
-        } catch (error) {
-            console.error("Nem sikerült betölteni a statisztikákat:", error);
-        }
-    }
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const id = urlParams.get('id');
 
-    // 2. AI Válasz generálása
-    async function generateResponse() {
-        const reviewText = document.getElementById('reviewInput').value;
-        const resultDiv = document.getElementById('aiResult');
-        const resultContent = document.getElementById('aiResultContent');
-        const genButton = document.querySelector('button[onclick="generateResponse()"]');
-
-        if (!reviewText) {
-            alert("Kérlek, írj be egy véleményt!");
-            return;
+        if (token) {
+            localStorage.setItem('jwt_token', token);
+            localStorage.setItem('business_id', id);
+            // Tisztítsuk meg az URL-t a szebb látványért
+            window.history.replaceState({}, document.title, "/dashboard.html");
         }
 
-        // Töltés jelzése
-        genButton.disabled = true;
-        genButton.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Generálás...';
-        resultContent.innerText = "A Gemini éppen a válaszon dolgozik...";
+        const JWT_TOKEN = localStorage.getItem('jwt_token');
+        if (!JWT_TOKEN) {
+            window.location.href = 'login.html'; // Ha nincs token, irány a login
+        }
 
-        try {
-            const response = await fetch(`${API_URL}/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                review_text: reviewText,
-                business_id: BUSINESS_ID // Elküldjük a cég azonosítóját!
-                })
-            });
+        // 1. Statisztikák betöltése az oldal indulásakor
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/stats/${BUSINESS_ID}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error("Nem sikerült azonosítani a felhasználót (Jogosultsági hiba)!");
+                }
 
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Megjelenítjük az eredményt
-                resultContent.innerText = data.answer;
-                resultDiv.classList.remove('opacity-50'); // Ha esetleg halványítottad volna
-            } else {
-                throw new Error(data.detail || "Hiba történt");
+                const data = await response.json();
+                // Itt frissítjük a HTML-ben a számokat (adjunk ID-t a kártyának a HTML-ben)
+                document.getElementById('totalReviews').innerText = data.total_reviews;
+                document.querySelector('.text-xl.font-semibold').innerText = `${BUSINESS_NAME} - Dashboard`;
+            } catch (error) {
+                console.error("Statisztika betöltési hiba:", error);
+                // Opcionális: Ha lejárt a token, dobjuk ki a loginhoz
+                if (error.message.includes("Jogosultsági hiba")) {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            }
+        }
+
+
+
+        // 2. AI Válasz generálása
+        async function generateResponse() {
+            const reviewText = document.getElementById('reviewInput').value;
+            const resultDiv = document.getElementById('aiResult');
+            const resultContent = document.getElementById('aiResultContent');
+            const genButton = document.querySelector('button[onclick="generateResponse()"]');
+
+            if (!reviewText) {
+                alert("Kérlek, írj be egy véleményt!");
+                return;
             }
 
-        } catch (error) {
-            alert("Hiba: " + error.message);
-            resultContent.innerText = "Sajnos hiba történt a generálás során.";
-        } finally {
-            // Gomb visszaállítása
-            genButton.disabled = false;
-            genButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Válasz Generálása';
-        }
-    }
+            // Töltés jelzése
+            genButton.disabled = true;
+            genButton.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Generálás...';
+            resultContent.innerText = "Az AI éppen a válaszon dolgozik...";
 
-    // Indításkor töltsük be a statisztikákat
-    window.onload = loadStats;
-</script>
+            try {
+                const response = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // BIZTONSÁGI KIEGÉSZÍTÉS: Token hozzáadása a fejléchez
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        review_text: reviewText,
+                        business_id: BUSINESS_ID // Elküldjük a cég azonosítóját!
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Megjelenítjük az eredményt
+                    resultContent.innerText = data.answer;
+                    resultDiv.classList.remove('opacity-50'); // Ha esetleg halványítottad volna
+                } else {
+                    // Ha a token lejárt vagy érvénytelen, 401-es hibát kapunk
+                    if (response.status === 401) {
+                        alert("A munkamenet lejárt, kérjük jelentkezzen be újra!");
+                        localStorage.clear();
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    throw new Error(data.detail || "Hiba történt");
+                }
+
+            } catch (error) {
+                alert("Hiba: " + error.message);
+                resultContent.innerText = "Sajnos hiba történt a generálás során.";
+            } finally {
+                // Gomb visszaállítása
+                genButton.disabled = false;
+                genButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> AI Válasz Generálása';
+            }
+        }
+
+        // Indításkor töltsük be a statisztikákat
+        window.onload = loadStats;
+
+        // Google OAuth kapcsolat létrehozása
+        function connectGoogle() {
+            const businessId = localStorage.getItem('business_id');
+            // Elküldjük a felhasználót a backend auth végpontjára
+            window.location.href = `http://127.0.0.1:8000/auth/google/${businessId}`;
+        }
+
+
+        // Ellenőrizzük, hogy most jöttünk-e vissza a Google-től egy sikeres kapcsolódás után
+        if (urlParams.get('status') === 'success') {
+            alert("Sikeres Google Business összekapcsolás! 🎉");
+            // Esetleg frissíthetjük a UI-t, hogy mutassa: "Kapcsolódva"
+            document.getElementById('googleConnect').innerText = "Kapcsolódva";
+        }
+    </script>
 </body>
+
 </html>

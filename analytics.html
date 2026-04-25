@@ -58,7 +58,7 @@
     <script>
         async function loadAnalytics() {
             try {
-                const BUSINESS_ID = 1;
+                const BUSINESS_ID = localStorage.getItem('business_id') || 1;
                 const response = await fetch(`http://127.0.0.1:8000/analytics/${BUSINESS_ID}`);
                 const data = await response.json();
 
