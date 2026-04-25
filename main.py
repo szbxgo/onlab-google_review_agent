@@ -212,7 +212,7 @@ async def auth_google(business_id: int):
     scopes = [
         "openid",
         "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/business_management"
+        "https://www.googleapis.com/auth/business.manage"
     ]
     scope_param = " ".join(scopes)
 
