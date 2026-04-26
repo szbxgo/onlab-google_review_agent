@@ -6,26 +6,25 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-# A Renderen beállított DATABASE_URL-t olvassuk be
+# Az .env fájlból olvassuk az External URL-t
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 if SQLALCHEMY_DATABASE_URL is None:
     raise ValueError("HIBA: A DATABASE_URL nincs beállítva a .env fájlban!")
 
-# A SQLAlchemy-nek PostgreSQL esetén postgresql:// kezdet kell
+# Javítás: Render 'postgres://' -> SQLAlchemy 'postgresql://'
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Engine létrehozása
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Engine létrehozása SSL kényszerítéssel
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, 
+    connect_args={"sslmode": "require"}
+)
 
-# Munkamenet (Session) létrehozása a lekérdezésekhez
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Alaposztály a modelleknek
 Base = declarative_base()
 
-# Függőség az API végpontokhoz
 def get_db():
     db = SessionLocal()
     try:

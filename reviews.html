@@ -59,7 +59,7 @@
         async function loadReviews() {
             try {
                 const BUSINESS_ID = localStorage.getItem('business_id') || 1;
-                const response = await fetch(`http://127.0.0.1:8000/all-reviews/${BUSINESS_ID}`);
+                const response = await fetch(`https://review-agent.agency/all-reviews/${BUSINESS_ID}`);
 
                 if (!response.ok) {
                     throw new Error("Sikertelen adatlekérés");

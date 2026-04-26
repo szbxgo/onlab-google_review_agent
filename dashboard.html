@@ -110,7 +110,7 @@
     </main>
 
     <script>
-        const API_URL = "https://onlab-google-review-agent.onrender.com"; // A FastAPI alapértelmezett címe
+        const API_URL = "https://review-agent.agency"; // A FastAPI alapértelmezett címe
 
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
@@ -229,7 +229,7 @@
 
         // Ellenőrizzük, hogy most jöttünk-e vissza a Google-től egy sikeres kapcsolódás után
         if (urlParams.get('status') === 'success') {
-            alert("Sikeres Google Business összekapcsolás! 🎉");
+            alert("Sikeres Google Business összekapcsolás!");
             // Esetleg frissíthetjük a UI-t, hogy mutassa: "Kapcsolódva"
             document.getElementById('googleConnect').innerText = "Kapcsolódva";
         }

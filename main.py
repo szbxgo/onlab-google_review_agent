@@ -14,6 +14,8 @@ models.Base.metadata.create_all(bind=engine)
 import requests
 from fastapi.responses import RedirectResponse
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from jose import jwt
 from datetime import datetime, timedelta
 
@@ -21,9 +23,17 @@ app = FastAPI()
 
 load_dotenv()
 
+origins = [
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "https://review-agent.agency", # Az új domained www nélkül
+    "https://www.review-agent.agency" # És www-vel is biztos ami biztos
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -178,8 +188,22 @@ async def get_all_reviews(business_id: int, db: Session = Depends(get_db)):
 # 3. Analytics (Analytics oldalhoz)
 @app.get("/analytics/{business_id}")
 async def get_analytics(business_id: int, db: Session = Depends(get_db)):
+    business = db.query(models.Business).filter(models.Business.id == business_id).first()
     reviews = db.query(models.Review).filter(models.Review.business_id == business_id).all()
     
+    # 1. Új Access Token kérése a Refresh Tokennel
+    # (A Google Access Token csak 1 órát él, ezért mindig frissíteni kell)
+    
+    # 2. Account ID lekérése
+    # GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts
+    
+    # 3. Location ID lekérése
+    # GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{acc_id}/locations
+    
+    # 4. Vélemények lekérése
+    # GET https://mybusiness.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews
+
+    token = business.google_refresh_token
     # Értékelések eloszlása a grafikonhoz
     ratings_count = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     for r in reviews:
@@ -221,6 +245,9 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
     
     res = requests.post(token_url, data=data).json()
     
+    access_token = res.get("access_token")
+    refresh_token = res.get("refresh_token")
+    business_id = int(state)
     # Mentjük a tokeneket az adatbázisba
     business = db.query(models.Business).filter(models.Business.id == business_id).first()
     if business:
@@ -231,8 +258,28 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         access_token = create_access_token(data={"sub": str(business.id)})
         
         # 4. Visszaküldjük a frontendnek a tokent az URL-ben
-        return RedirectResponse(url=f"http://127.0.0.1:5500/dashboard.html?token={access_token}&id={business.id}")
+        return RedirectResponse(url=f"https://review-agent.agency/dashboard.html?token={access_token}&id={business.id}")
 
+
+def ingest_review_to_rag(review_text, business_id):
+    # 1. Gemini Embedding hívása
+    embedding = genai.embed_content(
+        model="models/embedding-001",
+        content=review_text,
+        task_type="retrieval_document"
+    )
+    
+    # 2. Feltöltés Qdrant-ba
+    qdrant_client.upsert(
+        collection_name="reviews",
+        points=[
+            PointStruct(
+                id=str(uuid.uuid4()),
+                vector=embedding['embedding'],
+                payload={"business_id": business_id, "text": review_text}
+            )
+        ]
+    )
 
 # --- GOOGLE OAUTH2 FOLYAMAT ---
 # 1. Átirányítás a Google bejelentkezéshez
