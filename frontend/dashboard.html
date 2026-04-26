@@ -51,6 +51,10 @@
                     class="bg-white text-slate-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition">
                     <i class="fa-brands fa-google mr-2"></i> Összekapcsolás
                 </button>
+                <button onclick="syncReviews()" id="syncBtn"
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-500 transition ml-2">
+                    <i class="fa-solid fa-arrows-rotate mr-2"></i> Vélemények Frissítése
+                </button>
             </div>
         </header>
 
@@ -112,15 +116,21 @@
     <script>
         const API_URL = "https://review-agent.agency"; // A FastAPI alapértelmezett címe
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        const id = urlParams.get('id');
+        // Segédfüggvény a sima (nem HttpOnly) sütik kiolvasására
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
 
-        if (token) {
-            localStorage.setItem('jwt_token', token);
-            localStorage.setItem('business_id', id);
-            // Tisztítsuk meg az URL-t a szebb látványért
-            window.history.replaceState({}, document.title, "/dashboard.html");
+        // A Business ID-t most már a Google Callback állítja be sütiként
+        const BUSINESS_ID = getCookie('business_id') || localStorage.getItem('business_id');
+
+        if (!BUSINESS_ID) {
+            window.location.href = 'login.html'; // Ha nincs ID, még nem lépett be
+        } else {
+            // Eltároljuk, ha esetleg a többi oldalnak kellene
+            localStorage.setItem('business_id', BUSINESS_ID);
         }
 
         const JWT_TOKEN = localStorage.getItem('jwt_token');
@@ -131,7 +141,11 @@
         // 1. Statisztikák betöltése az oldal indulásakor
         async function loadStats() {
             try {
-                const response = await fetch(`${API_URL}/stats/${BUSINESS_ID}`, {
+                const businessId = localStorage.getItem('business_id');
+
+                if (!businessId) throw new Error("Nincs Business ID!");
+
+                const response = await fetch(`${API_URL}/stats/${businessId}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${JWT_TOKEN}`,
@@ -143,9 +157,13 @@
                 }
 
                 const data = await response.json();
+
                 // Itt frissítjük a HTML-ben a számokat (adjunk ID-t a kártyának a HTML-ben)
                 document.getElementById('totalReviews').innerText = data.total_reviews;
+
+                // nev kirva a headerben
                 document.querySelector('.text-xl.font-semibold').innerText = `${BUSINESS_NAME} - Dashboard`;
+
             } catch (error) {
                 console.error("Statisztika betöltési hiba:", error);
                 // Opcionális: Ha lejárt a token, dobjuk ki a loginhoz
@@ -232,6 +250,34 @@
             alert("Sikeres Google Business összekapcsolás!");
             // Esetleg frissíthetjük a UI-t, hogy mutassa: "Kapcsolódva"
             document.getElementById('googleConnect').innerText = "Kapcsolódva";
+        }
+
+        async function syncReviews() {
+            const btn = document.getElementById('syncBtn');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Szinkronizálás...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`/sync-google-reviews/${BUSINESS_ID}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(data.message); // "Szinkronizáció elindítva a háttérben!"
+                    // 2-3 másodperc múlva érdemes újratölteni a statisztikákat
+                    setTimeout(loadStats, 3000);
+                } else {
+                    alert("Hiba: " + data.detail);
+                }
+            } catch (error) {
+                console.error("Szinkronizációs hiba:", error);
+                alert("Nem sikerült elindítani a szinkronizációt.");
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-2"></i> Vélemények Frissítése';
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

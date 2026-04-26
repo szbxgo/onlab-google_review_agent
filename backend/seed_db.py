@@ -1,5 +1,5 @@
 from database import SessionLocal
-import models
+import models as models
 
 def seed_data():
     db = SessionLocal()

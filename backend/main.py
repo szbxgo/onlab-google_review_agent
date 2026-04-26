@@ -8,13 +8,17 @@ from qdrant_client.http import models as q_models
 from google import genai  
 from sqlalchemy.orm import Session
 from database import get_db, engine
-import models
+import models as models
 models.Base.metadata.create_all(bind=engine)
 
 import requests
 from fastapi.responses import RedirectResponse
-
+from fastapi import BackgroundTasks
+from db_feltoltes import process_and_upload
+from fastapi import Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from jose import jwt
 from datetime import datetime, timedelta
@@ -24,10 +28,9 @@ app = FastAPI()
 load_dotenv()
 
 origins = [
-    "http://localhost:8000",
-    "http://localhost:3000",
     "https://review-agent.agency", # Az új domained www nélkül
-    "https://www.review-agent.agency" # És www-vel is biztos ami biztos
+    "https://www.review-agent.agency", # És www-vel is biztos ami biztos
+    "http://localhost:8000"
 ]
 
 app.add_middleware(
@@ -60,17 +63,26 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# 4. ÚJ VÉGPONT: Jelenlegi vállalkozás azonosító lekérése a tokenből (minden védett végpont ezt használja majd)
-async def get_current_business_id(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Nincs token!")
+# Átírjuk a jogosultság-ellenőrző függvényt
+async def get_current_business_id(request: Request):
+    # 1. Megpróbáljuk kiolvasni a tokent a biztonságos sütiből
+    token = request.cookies.get("access_token")
+    
+    # (Opcionális: Visszafelé kompatibilitás a régi módszerhez tesztelésnél)
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Nincs token (nem vagy bejelentkezve)!")
+        
     try:
-        token = authorization.split(" ")[1] # "Bearer <token>" formátum
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return int(payload.get("sub"))
     except:
-        raise HTTPException(status_code=401, detail="Érvénytelen token!")
-
+        raise HTTPException(status_code=401, detail="Érvénytelen vagy lejárt token!")
+    
 # Kliensek inicializálása az új módon
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 q_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
@@ -101,7 +113,13 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     return {"business_id": business.id, "business_name": business.name}
 
 @app.post("/generate")
-async def generate_response(request: ReviewRequest, db: Session = Depends(get_db)):
+async def generate_response(
+    request: ReviewRequest, 
+    current_id: int = Depends(get_current_business_id), 
+    db: Session = Depends(get_db)):
+
+    if request.business_id != current_id:
+        raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
     try:
         # 1. Cégadatok lekérése SQL-ből
         business = db.query(models.Business).filter(models.Business.id == request.business_id).first()
@@ -173,7 +191,14 @@ async def get_stats(business_id: int, current_id: int = Depends(get_current_busi
 
 # 2. Összes vélemény listázása (Reviews oldalhoz)
 @app.get("/all-reviews/{business_id}")
-async def get_all_reviews(business_id: int, db: Session = Depends(get_db)):
+async def get_all_reviews(
+    business_id: int, 
+    current_id: int = Depends(get_current_business_id), 
+    db: Session = Depends(get_db)):
+
+    if business_id != current_id:
+        raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
+    
     reviews = db.query(models.Review).filter(models.Review.business_id == business_id).all()
     # Átalakítjuk a frontend által várt formátumra
     return [
@@ -187,7 +212,14 @@ async def get_all_reviews(business_id: int, db: Session = Depends(get_db)):
 
 # 3. Analytics (Analytics oldalhoz)
 @app.get("/analytics/{business_id}")
-async def get_analytics(business_id: int, db: Session = Depends(get_db)):
+async def get_analytics(
+    business_id: int, 
+    current_id: int = Depends(get_current_business_id), 
+    db: Session = Depends(get_db)):
+    
+    if business_id != current_id:
+        raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
+    
     business = db.query(models.Business).filter(models.Business.id == business_id).first()
     reviews = db.query(models.Review).filter(models.Review.business_id == business_id).all()
     
@@ -221,12 +253,6 @@ async def get_analytics(business_id: int, db: Session = Depends(get_db)):
         "ratings": ratings_count
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000)) 
-    uvicorn.run(app, host="0.0.0.0", port=port)
-
-
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
 # 2. Google visszahívási végpont (ide érkezik meg a felhasználó)
 @app.get("/auth/google/callback")
@@ -251,14 +277,58 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
     # Mentjük a tokeneket az adatbázisba
     business = db.query(models.Business).filter(models.Business.id == business_id).first()
     if business:
-        business.google_refresh_token = res.get("refresh_token")
+        if res.get("refresh_token"):
+            business.google_refresh_token = res.get("refresh_token")
+
+        if access_token:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            try:
+                # 1. Fiókok (Accounts) lekérése
+                acc_url = "https://mybusinessaccountmanagement.googleapis.com/v1/accounts"
+                acc_data = requests.get(acc_url, headers=headers).json()
+                
+                # Ha van fiók, kiválasztjuk az elsőt (MVP szinten ez tökéletes)
+                if 'accounts' in acc_data and len(acc_data['accounts']) > 0:
+                    # A Google "accounts/12345" formátumban adja vissza, nekünk csak a szám kell
+                    raw_acc_name = acc_data['accounts'][0]['name']
+                    account_id = raw_acc_name.split('/')[-1] 
+                    business.google_account_id = account_id
+                    
+                    # 2. Helyszínek (Locations) lekérése az adott fiókhoz
+                    loc_url = f"https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{account_id}/locations?readMask=name"
+                    loc_data = requests.get(loc_url, headers=headers).json()
+                    
+                    if 'locations' in loc_data and len(loc_data['locations']) > 0:
+                        raw_loc_name = loc_data['locations'][0]['name']
+                        location_id = raw_loc_name.split('/')[-1]
+                        business.google_location_id = location_id
+                        
+            except Exception as e:
+                print(f"Hiba a Google ID-k lekérésekor: {e}")
+        
         db.commit()
         
-        # 3. GENERÁLUNK EGY SAJÁT JWT TOKENT
-        access_token = create_access_token(data={"sub": str(business.id)})
+        # 2. Átirányítás a dashboardra (NINCS TOKEN AZ URL-BEN!)
+        response = RedirectResponse(url="/dashboard.html")
         
-        # 4. Visszaküldjük a frontendnek a tokent az URL-ben
-        return RedirectResponse(url=f"https://review-agent.agency/dashboard.html?token={access_token}&id={business.id}")
+        # 3. JWT beállítása HttpOnly sütiként (Javascript nem látja, nem lopható)
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,  # Kiemelten fontos XSS védelem!
+            secure=True,    # Csak HTTPS kapcsolaton keresztül működik
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
+        
+        # 4. Business ID beállítása sima sütiként (hogy a frontend JS lássa, hol vagyunk)
+        response.set_cookie(
+            key="business_id",
+            value=str(business.id),
+            httponly=False
+        )
+        
+        return response
 
 
 def ingest_review_to_rag(review_text, business_id):
@@ -306,15 +376,102 @@ async def auth_google(business_id: int):
 #
 # 3. ÚJ VÉGPONT: Vélemények kézi frissítése a Google-ből
 @app.post("/sync-google-reviews/{business_id}")
-async def sync_reviews(business_id: int, db: Session = Depends(get_db)):
+async def sync_reviews(
+    business_id: int, 
+    background_tasks: BackgroundTasks, # Háttérfolyamat kezelő
+    current_id: int = Depends(get_current_business_id), 
+    db: Session = Depends(get_db)):
+
+    # 1. Jogosultság ellenőrzése (javított indentációval)
+    if business_id != current_id:
+        raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
+
     business = db.query(models.Business).filter(models.Business.id == business_id).first()
+
     if not business or not business.google_refresh_token:
         raise HTTPException(status_code=400, detail="Nincs Google kapcsolat.")
     
-    # ITT FOG MEGTÖRTÉNNI A VARÁZSLAT:
-    # 1. Access token frissítése a refresh_tokennel
-    # 2. Vélemények letöltése a Google API-ról
-    # 3. db_feltoltes.py-ban lévő logic meghívása (vektorizálás + Qdrant)
+    # 2. Szinkronizáció indítása a háttérben
+    background_tasks.add_task(perform_google_sync, business, db)
     
-    return {"message": "Szinkronizáció elindítva!"}
+    return {"message": "Szinkronizáció elindítva a háttérben!"}
+
+# --- SEGÉDFÜGGVÉNY A SZINKRONIZÁCIÓHOZ ---
+def perform_google_sync(business, db: Session):
+    try:
+        # 1. Access Token frissítése
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "refresh_token": business.google_refresh_token,
+            "grant_type": "refresh_token",
+        }
+        token_res = requests.post(token_url, data=data).json()
+        access_token = token_res.get("access_token")
+
+        # 2. Vélemények lekérése a Google-től 
+        # (Feltételezve, hogy a google_account_id és location_id már megvan)
+        acc_id = business.google_account_id
+        loc_id = business.google_location_id
+        
+        if not acc_id or not loc_id:
+            print(f"Hiba: Hiányzó Google azonosítók a cégnél: {business.id}")
+            return
+
+        reviews_url = f"https://mybusiness.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        reviews_res = requests.get(reviews_url, headers=headers).json()
+        google_reviews = reviews_res.get('reviews', [])
+
+        for g_review in google_reviews:
+            g_id = g_review['reviewId']
+            
+            # Csak akkor mentjük, ha még nincs benne (google_review_id alapján)
+            exists = db.query(models.Review).filter(models.Review.google_review_id == g_id).first()
+            if not exists:
+                # SQL mentés
+                new_review = models.Review(
+                    business_id=business.id,
+                    google_review_id=g_id,
+                    author=g_review['reviewer']['displayName'],
+                    text=g_review['comment'],
+                    rating=g_review['starRating']
+                )
+                db.add(new_review)
+                db.commit()
+
+                # Vektorizálás és Qdrant feltöltés a meglévő logikáddal
+                process_and_upload(
+                    review_text=new_review.text,
+                    author=new_review.author,
+                    rating=new_review.rating,
+                    business_id=business.id
+                )
+        print(f"Sikeres szinkronizáció: {business.name}")
+        
+    except Exception as e:
+        print(f"Hiba a szinkronizáció során: {e}")
+
+# --- FRONTEND KISZOLGÁLÁSA ---
+# Minden egyéb végpont (API) után kell definiálni!
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
+
+# A gyökér URL (/) kiszolgálja az index.html-t
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+# Minden más oldalt (pl. /dashboard.html) közvetlenül a frontend mappából adunk vissza
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000)) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+
 

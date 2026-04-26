@@ -59,8 +59,13 @@
         async function loadAnalytics() {
             try {
                 const BUSINESS_ID = localStorage.getItem('business_id') || 1;
-                const response = await fetch(`http://127.0.0.1:8000/analytics/${BUSINESS_ID}`);
+                const response = await fetch(`https://review-agent.agency/analytics/${BUSINESS_ID}`);
+                
+
                 const data = await response.json();
+                
+                // levedjük a JWT tokent, ha szükséges lesz a jövőben
+                const JWT_TOKEN = localStorage.getItem('jwt_token');
 
                 // 1. AI Jelentés betöltése
                 document.getElementById('aiReportBox').innerText = data.ai_report;

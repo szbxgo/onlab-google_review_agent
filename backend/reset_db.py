@@ -1,5 +1,5 @@
 from database import engine, Base
-import models  # Fontos: be kell tölteni a modelleket, hogy a Base lássa őket!
+import models as models  # Fontos: be kell tölteni a modelleket, hogy a Base lássa őket!
 from sqlalchemy import text
 
 def reset_database():

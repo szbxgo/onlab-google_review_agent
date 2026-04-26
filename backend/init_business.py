@@ -1,6 +1,6 @@
 import os
 from database import SessionLocal
-import models
+import models as models
 
 db = SessionLocal()
 # Ellenőrizzük, van-e már ilyen

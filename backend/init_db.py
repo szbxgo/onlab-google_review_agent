@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from database import Base # A korábban megbeszélt database.py-ból
-import models # A korábban megbeszélt models.py-ból
+from database import Base
+import backend.models as models # A korábban megbeszélt models.py-ból
 
 # 1. Környezeti változók betöltése
 load_dotenv()
