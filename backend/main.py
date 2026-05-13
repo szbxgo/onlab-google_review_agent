@@ -128,7 +128,7 @@ async def generate_response(
             raise HTTPException(status_code=404, detail="Cég nem található.")
 
         # 2. Új vélemény vektorizálása
-        res = gemini_client.models.embed_content(model="gemini-embedding-2-preview", contents=request.review_text)
+        res = gemini_client.models.embed_content(model="gemini-embedding-001", contents=request.review_text)
         query_vector = res.embeddings[0].values
 
         # 3. RAG keresés a reviews gyűjteményben business_id szűréssel
@@ -163,7 +163,7 @@ async def generate_response(
         
         # Generálás az új SDK szerint
         response = gemini_client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-embedding-001",
             contents=prompt
         )
         
@@ -244,7 +244,7 @@ async def get_analytics(
     # AI összefoglaló generálása
     sample = "\n".join([r.review_text for r in reviews[-5:]])
     model = gemini_client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-embedding-001",
         contents=f"Írj egy rövid, 3 mondatos üzleti elemzést ezek alapján: {sample}"
     )
 
@@ -311,11 +311,15 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         
         # 2. Átirányítás a dashboardra (NINCS TOKEN AZ URL-BEN!)
         response = RedirectResponse(url="/dashboard.html")
+
+        # --- JAVÍTOTT RÉSZ: Saját JWT generálása ---
+        # Létrehozzuk a saját tokenünket a saját SECRET_KEY-ünkkel
+        my_jwt_token = create_access_token(data={"sub": str(business.id)})
         
         # 3. JWT beállítása HttpOnly sütiként (Javascript nem látja, nem lopható)
         response.set_cookie(
             key="access_token",
-            value=access_token,
+            value=my_jwt_token,
             httponly=True,  # Kiemelten fontos XSS védelem!
             secure=True,    # Csak HTTPS kapcsolaton keresztül működik
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
@@ -329,15 +333,6 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         )
         
         return response
-
-
-def ingest_review_to_rag(review_text, business_id):
-    # 1. Gemini Embedding hívása
-    embedding = genai.embed_content(
-        model="models/embedding-001",
-        content=review_text,
-        task_type="retrieval_document"
-    )
     
     # 2. Feltöltés Qdrant-ba
     qdrant_client.upsert(

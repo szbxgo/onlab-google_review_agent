@@ -133,10 +133,6 @@
             localStorage.setItem('business_id', BUSINESS_ID);
         }
 
-        const JWT_TOKEN = localStorage.getItem('jwt_token');
-        if (!JWT_TOKEN) {
-            window.location.href = 'login.html'; // Ha nincs token, irány a login
-        }
 
         // 1. Statisztikák betöltése az oldal indulásakor
         async function loadStats() {
@@ -148,7 +144,6 @@
                 const response = await fetch(`${API_URL}/stats/${businessId}`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${JWT_TOKEN}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -197,9 +192,7 @@
                 const response = await fetch(`${API_URL}/generate`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        // BIZTONSÁGI KIEGÉSZÍTÉS: Token hozzáadása a fejléchez
-                        'Authorization': `Bearer ${JWT_TOKEN}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         review_text: reviewText,
@@ -241,8 +234,10 @@
         function connectGoogle() {
             const businessId = localStorage.getItem('business_id');
             // Elküldjük a felhasználót a backend auth végpontjára
-            window.location.href = `https://onlab-google-review-agent.onrender.com/auth/google/${businessId}`;
+            window.location.href = `https://review-agent.agency/auth/google/${businessId}`;
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
 
 
         // Ellenőrizzük, hogy most jöttünk-e vissza a Google-től egy sikeres kapcsolódás után

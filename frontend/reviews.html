@@ -67,7 +67,6 @@
                 const response = await fetch(`/all-reviews/${BUSINESS_ID}`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${JWT_TOKEN}`,
                         'Content-Type': 'application/json'
                     }
                 });
