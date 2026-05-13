@@ -275,7 +275,19 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
     refresh_token = res.get("refresh_token")
     business_id = int(state)
     # Mentjük a tokeneket az adatbázisba
+
     business = db.query(models.Business).filter(models.Business.id == business_id).first()
+
+    if not business:
+        business = models.Business(
+            id=business_id, 
+            name="ReviewAgent Ügyfél", 
+            email="szabobalint1004@gmail.com" # Ideiglenesen beállítjuk a te email címeledet
+        )
+        db.add(business)
+        db.commit()
+        db.refresh(business)
+
     if business:
         if res.get("refresh_token"):
             business.google_refresh_token = res.get("refresh_token")
@@ -312,7 +324,6 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         # 2. Átirányítás a dashboardra (NINCS TOKEN AZ URL-BEN!)
         response = RedirectResponse(url="/dashboard.html")
 
-        # --- JAVÍTOTT RÉSZ: Saját JWT generálása ---
         # Létrehozzuk a saját tokenünket a saját SECRET_KEY-ünkkel
         my_jwt_token = create_access_token(data={"sub": str(business.id)})
         
@@ -333,18 +344,6 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
         )
         
         return response
-    
-    # 2. Feltöltés Qdrant-ba
-    qdrant_client.upsert(
-        collection_name="reviews",
-        points=[
-            PointStruct(
-                id=str(uuid.uuid4()),
-                vector=embedding['embedding'],
-                payload={"business_id": business_id, "text": review_text}
-            )
-        ]
-    )
 
 # --- GOOGLE OAUTH2 FOLYAMAT ---
 # 1. Átirányítás a Google bejelentkezéshez
