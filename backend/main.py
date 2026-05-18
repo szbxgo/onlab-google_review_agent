@@ -163,7 +163,7 @@ async def generate_response(
         
         # Generálás az új SDK szerint
         response = gemini_client.models.generate_content(
-            model="gemini-embedding-001",
+            model="gemini-2.5-flash",
             contents=prompt
         )
         
@@ -244,7 +244,7 @@ async def get_analytics(
     # AI összefoglaló generálása
     sample = "\n".join([r.review_text for r in reviews[-5:]])
     model = gemini_client.models.generate_content(
-        model="gemini-embedding-001",
+        model="gemini-2.5-flash",
         contents=f"Írj egy rövid, 3 mondatos üzleti elemzést ezek alapján: {sample}"
     )
 
