@@ -128,8 +128,8 @@ async def generate_response(
             raise HTTPException(status_code=404, detail="Cég nem található.")
 
         # 2. Új vélemény vektorizálása
-        res = gemini_client.models.embed_content(model="gemini-embedding-001", contents=request.review_text)
-        query_vector = res.embeddings[0].values
+        embedding_res = gemini_client.models.embed_content(model="gemini-embedding-001", contents=request.review_text)
+        query_vector = embedding_res.embeddings[0].values
 
         # 3. RAG keresés a reviews gyűjteményben business_id szűréssel
         search_result = q_client.search(
@@ -146,15 +146,17 @@ async def generate_response(
             limit=3
         )
         
-        # 4. Kontextus összefűzése
+        # 4. Kontextus összefűzése (Tiszta változónévvel, ami nem ütközik semmivel)
         context = ""
-        for res in search_result:
-            context += f"\n- Korábbi eset: {res.payload.get('review', '')}\n"
+        for hit in search_result:
+            context += f"\n- Korábbi eset: {hit.payload.get('review', '')}\n"
         
-        # 5. Válasz generálása (Flash modellel a sebességért)
+        # 5. Válasz generálása (Biztonságos fallback stílusirányelvvel)
+        guideline = business.style_guideline if business.style_guideline else "Légy udvarias, segítőkész és professzionális."
+        
         prompt = f"""
         Te {business.name} AI asszisztense vagy. 
-        Irányelv: {business.style_guideline}
+        Irányelv: {guideline}
         Segítség (múltbéli válaszok): {context}
         
         Ügyfél véleménye: {request.review_text}
@@ -220,38 +222,43 @@ async def get_analytics(
     if business_id != current_id:
         raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
     
-    business = db.query(models.Business).filter(models.Business.id == business_id).first()
-    reviews = db.query(models.Review).filter(models.Review.business_id == business_id).all()
-    
-    # 1. Új Access Token kérése a Refresh Tokennel
-    # (A Google Access Token csak 1 órát él, ezért mindig frissíteni kell)
-    
-    # 2. Account ID lekérése
-    # GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts
-    
-    # 3. Location ID lekérése
-    # GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{acc_id}/locations
-    
-    # 4. Vélemények lekérése
-    # GET https://mybusiness.googleapis.com/v1/accounts/{acc_id}/locations/{loc_id}/reviews
+    try:
+        business = db.query(models.Business).filter(models.Business.id == business_id).first()
+        if not business:
+            raise HTTPException(status_code=404, detail="Cég nem található.")
+            
+        reviews = db.query(models.Review).filter(models.Review.business_id == business_id).all()
+        
+        # 1. Értékelések eloszlása a grafikonhoz (Alapértelmezetten 0-ról indul minden csillag)
+        ratings_count = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        for r in reviews:
+            if r.rating in ratings_count:
+                ratings_count[r.rating] += 1
 
-    token = business.google_refresh_token
-    # Értékelések eloszlása a grafikonhoz
-    ratings_count = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-    for r in reviews:
-        ratings_count[r.rating] = ratings_count.get(r.rating, 0) + 1
+        # 2. AI összefoglaló generálása az utolsó 5 vélemény alapján
+        # PONTOSÍTVA: r.text-et használunk r.review_text helyett a models.py miatt!
+        recent_reviews = [r.text for r in reviews[-5:] if r.text]
+        
+        if recent_reviews:
+            sample = "\n".join(recent_reviews)
+            prompt = f"Te egy profi üzleti elemző vagy. Írj egy rövid, maximum 3 mondatos, lényegretörő üzleti elemzést/összefoglalót a {business.name} legfrissebb vendégvéleményei alapján:\n{sample}"
+            
+            gemini_response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            ai_report = gemini_response.text
+        else:
+            ai_report = "Még nincsenek szöveges vélemények az elemzéshez."
 
-    # AI összefoglaló generálása
-    sample = "\n".join([r.review_text for r in reviews[-5:]])
-    model = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"Írj egy rövid, 3 mondatos üzleti elemzést ezek alapján: {sample}"
-    )
+        return {
+            "ai_report": ai_report,
+            "ratings": ratings_count
+        }
 
-    return {
-        "ai_report": model.text,
-        "ratings": ratings_count
-    }
+    except Exception as e:
+        print(f"Hiba az analitika generálása során: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
 # 2. Google visszahívási végpont (ide érkezik meg a felhasználó)
