@@ -386,14 +386,25 @@ async def sync_reviews(
         raise HTTPException(status_code=400, detail="Nincs Google kapcsolat.")
     
     # 2. Szinkronizáció indítása a háttérben
-    background_tasks.add_task(perform_google_sync, business, db)
+    background_tasks.add_task(perform_google_sync, business_id)
     
     return {"message": "Szinkronizáció elindítva a háttérben!"}
 
 # --- SEGÉDFÜGGVÉNY A SZINKRONIZÁCIÓHOZ ---
-def perform_google_sync(business, db: Session):
+def perform_google_sync(business_id: int):
+
+    # 1. SAJÁT ADATBÁZIS KAPCSOLAT NYITÁSA A HÁTTÉRFOLYAMATNAK
+    from database import SessionLocal
+    db = SessionLocal()
+
     try:
-        # 1. Access Token frissítése
+        # 2. CÉG LEKÉRDEZÉSE AZ ADATBÁZISBÓL (Ezt hagytad ki!)
+        business = db.query(models.Business).filter(models.Business.id == business_id).first()
+        if not business:
+            print(f"Hiba: Nem található cég a {business_id} ID-val.")
+            return
+        
+        # 3. Access Token frissítése
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "client_id": GOOGLE_CLIENT_ID,
@@ -404,8 +415,7 @@ def perform_google_sync(business, db: Session):
         token_res = requests.post(token_url, data=data).json()
         access_token = token_res.get("access_token")
 
-        # 2. Vélemények lekérése a Google-től 
-        # (Feltételezve, hogy a google_account_id és location_id már megvan)
+        # 4. Vélemények lekérése a Google-től
         acc_id = business.google_account_id
         loc_id = business.google_location_id
         
@@ -418,34 +428,56 @@ def perform_google_sync(business, db: Session):
         reviews_res = requests.get(reviews_url, headers=headers).json()
         google_reviews = reviews_res.get('reviews', [])
 
+        # SEGÉD: Szöveges csillagok számmá alakítása a models.py (Integer) miatt!
+        rating_converter = {
+            "ONE": 1, "TWO": 2, "THREE": 3, "FOUR": 4, "FIVE": 5,
+            1: 1, 2: 2, 3: 3, 4: 4, 5: 5
+        }
+
         for g_review in google_reviews:
             g_id = g_review['reviewId']
+            if not g_id:
+                print("Hiba: Google vélemény ID hiányzik, átugorva.")
+                continue
             
             # Csak akkor mentjük, ha még nincs benne (google_review_id alapján)
             exists = db.query(models.Review).filter(models.Review.google_review_id == g_id).first()
+
             if not exists:
+                # 5. JAVÍTOTT RÉSZ: BIZTONSÁGOS SZÖVEG LEKÉRDEZÉS (KeyError ellen!)
+                raw_text = g_review.get('comment', '')
+                clean_text = raw_text.strip() if raw_text else "Csak értékelés (szöveg nélkül)"
+                raw_author = g_review.get('reviewer', {}).get('displayName', 'Anonim Vendég')
+
+                # Csillagok konvertálása
+                raw_rating = g_review.get('starRating', 'FIVE')
+                numeric_rating = rating_converter.get(raw_rating, 5)
+
                 # SQL mentés
                 new_review = models.Review(
                     business_id=business.id,
                     google_review_id=g_id,
-                    author=g_review['reviewer']['displayName'],
-                    text=g_review['comment'],
-                    rating=g_review['starRating']
+                    author=raw_author,
+                    text=clean_text,
+                    rating=numeric_rating  # Alapértelmezett érték, ha valamiért hiányzik
                 )
                 db.add(new_review)
                 db.commit()
 
                 # Vektorizálás és Qdrant feltöltés a meglévő logikáddal
                 process_and_upload(
+                    business_id=business.id,
                     review_text=new_review.text,
                     author=new_review.author,
-                    rating=new_review.rating,
-                    business_id=business.id
+                    rating=new_review.rating
                 )
         print(f"Sikeres szinkronizáció: {business.name}")
         
     except Exception as e:
         print(f"Hiba a szinkronizáció során: {e}")
+
+    finally:
+        db.close()
 
 # --- FRONTEND KISZOLGÁLÁSA ---
 # Minden egyéb végpont (API) után kell definiálni!
