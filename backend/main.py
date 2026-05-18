@@ -300,6 +300,8 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
                 acc_url = "https://mybusinessaccountmanagement.googleapis.com/v1/accounts"
                 acc_data = requests.get(acc_url, headers=headers).json()
                 
+                print(f"--- GOOGLE VÁLASZ A CÉGEKRE: {acc_data} ---")
+
                 # Ha van fiók, kiválasztjuk az elsőt (MVP szinten ez tökéletes)
                 if 'accounts' in acc_data and len(acc_data['accounts']) > 0:
                     # A Google "accounts/12345" formátumban adja vissza, nekünk csak a szám kell
