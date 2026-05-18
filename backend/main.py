@@ -204,7 +204,7 @@ async def get_all_reviews(
     return [
         {
             "Author_Name": r.author or "Vendég",
-            "Review_Text": r.review_text,
+            "Review_Text": r.text,
             "Review_Rating": r.rating
         } for r in reviews
     ]
