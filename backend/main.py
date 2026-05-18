@@ -255,6 +255,101 @@ async def get_analytics(
 
 # A Google visszahívási végpont (ide érkezik meg a felhasználó) a main.py végén található, mert oda tartozik logikailag.
 # 2. Google visszahívási végpont (ide érkezik meg a felhasználó)
+
+# @app.get("/auth/google/callback")
+# async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
+#     business_id = int(state)
+    
+#     # Itt váltjuk be a kódot tokenekre
+#     token_url = "https://oauth2.googleapis.com/token"
+#     data = {
+#         "code": code,
+#         "client_id": GOOGLE_CLIENT_ID,
+#         "client_secret": GOOGLE_CLIENT_SECRET,
+#         "redirect_uri": GOOGLE_REDIRECT_URI,
+#         "grant_type": "authorization_code",
+#     }
+    
+#     res = requests.post(token_url, data=data).json()
+    
+#     access_token = res.get("access_token")
+#     refresh_token = res.get("refresh_token")
+#     business_id = int(state)
+#     # Mentjük a tokeneket az adatbázisba
+
+#     business = db.query(models.Business).filter(models.Business.id == business_id).first()
+
+#     if not business:
+#         business = models.Business(
+#             id=business_id, 
+#             name="ReviewAgent Ügyfél", 
+#             email="szabobalint1004@gmail.com" # Ideiglenesen beállítjuk a te email címeledet
+#         )
+#         db.add(business)
+#         db.commit()
+#         db.refresh(business)
+
+#     if business:
+#         if res.get("refresh_token"):
+#             business.google_refresh_token = res.get("refresh_token")
+
+#         if access_token:
+#             headers = {"Authorization": f"Bearer {access_token}"}
+            
+#             try:
+#                 # 1. Fiókok (Accounts) lekérése
+#                 acc_url = "https://mybusinessaccountmanagement.googleapis.com/v1/accounts"
+#                 acc_data = requests.get(acc_url, headers=headers).json()
+                
+#                 print(f"--- GOOGLE VÁLASZ A CÉGEKRE: {acc_data} ---")
+
+#                 # Ha van fiók, kiválasztjuk az elsőt (MVP szinten ez tökéletes)
+#                 if 'accounts' in acc_data and len(acc_data['accounts']) > 0:
+#                     # A Google "accounts/12345" formátumban adja vissza, nekünk csak a szám kell
+#                     raw_acc_name = acc_data['accounts'][0]['name']
+#                     account_id = raw_acc_name.split('/')[-1] 
+#                     business.google_account_id = account_id
+                    
+#                     # 2. Helyszínek (Locations) lekérése az adott fiókhoz
+#                     loc_url = f"https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{account_id}/locations?readMask=name"
+#                     loc_data = requests.get(loc_url, headers=headers).json()
+
+#                     # --- DIAGNOSZTIKA: Kiírjuk a helyszínek válaszát is ---
+#                     print(f"--- GOOGLE LOCATIONS NYERS VÁLASZ: {loc_data} ---")
+                    
+#                     if 'locations' in loc_data and len(loc_data['locations']) > 0:
+#                         raw_loc_name = loc_data['locations'][0]['name']
+#                         location_id = raw_loc_name.split('/')[-1]
+#                         business.google_location_id = location_id
+                        
+#             except Exception as e:
+#                 print(f"Hiba a Google ID-k lekérésekor: {e}")
+        
+#         db.commit()
+        
+#         # 2. Átirányítás a dashboardra (NINCS TOKEN AZ URL-BEN!)
+#         response = RedirectResponse(url="/dashboard.html")
+
+#         # Létrehozzuk a saját tokenünket a saját SECRET_KEY-ünkkel
+#         my_jwt_token = create_access_token(data={"sub": str(business.id)})
+        
+#         # 3. JWT beállítása HttpOnly sütiként (Javascript nem látja, nem lopható)
+#         response.set_cookie(
+#             key="access_token",
+#             value=my_jwt_token,
+#             httponly=True,  # Kiemelten fontos XSS védelem!
+#             secure=True,    # Csak HTTPS kapcsolaton keresztül működik
+#             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+#         )
+        
+#         # 4. Business ID beállítása sima sütiként (hogy a frontend JS lássa, hol vagyunk)
+#         response.set_cookie(
+#             key="business_id",
+#             value=str(business.id),
+#             httponly=False
+#         )
+        
+#         return response
 @app.get("/auth/google/callback")
 async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
     business_id = int(state)
@@ -312,6 +407,9 @@ async def google_callback(code: str, state: str, db: Session = Depends(get_db)):
                     # 2. Helyszínek (Locations) lekérése az adott fiókhoz
                     loc_url = f"https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{account_id}/locations?readMask=name"
                     loc_data = requests.get(loc_url, headers=headers).json()
+
+                    # --- DIAGNOSZTIKA: Kiírjuk a helyszínek válaszát is ---
+                    print(f"--- GOOGLE LOCATIONS NYERS VÁLASZ: {loc_data} ---")
                     
                     if 'locations' in loc_data and len(loc_data['locations']) > 0:
                         raw_loc_name = loc_data['locations'][0]['name']
