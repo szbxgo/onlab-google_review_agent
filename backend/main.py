@@ -1,30 +1,44 @@
 import os
+import requests
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse, FileResponse
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as q_models
 from google import genai  
 from sqlalchemy.orm import Session
+from jose import jwt
+
 from database import get_db, engine
 import models as models
-models.Base.metadata.create_all(bind=engine)
 
-import requests
-from fastapi.responses import RedirectResponse
-from fastapi import BackgroundTasks
-from db_feltoltes import process_and_upload
-from fastapi import Request, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
-from jose import jwt
-from datetime import datetime, timedelta
-
-# --- 1. LÉPÉS: LÉTREHOZZUK AZ APP-OT ÉS AZONNAL BETÖLTJÜK A .ENV FÁJLT ---
-app = FastAPI()
+# --- 1. LÉPÉS: AZONNAL BETÖLTJÜK A .ENV FÁJLT ÉS A KÖRNYEZETI VÁLTOZÓKAT ---
 load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+COLLECTION_NAME = "reviews"
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
+
+# --- 2. LÉPÉS: INICIALIZÁLJUK A KLIENSEKET A MÁR BIZTOSAN LÉTEZŐ KULCSOKKAL ---
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+q_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+# --- 3. LÉPÉS: FASTAPI ÉS ADATBÁZIS ELINDÍTÁSA ---
+app = FastAPI()
+models.Base.metadata.create_all(bind=engine)
 
 origins = [
     "https://review-agent.agency", 
@@ -39,24 +53,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# --- 2. LÉPÉS: BEOLVASSUK A KÖRNYEZETI VÁLTOZÓKAT (Most már biztonságosan léteznek) ---
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-QDRANT_URL = os.getenv("QDRANT_URL")
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-COLLECTION_NAME = "reviews"
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
-
-# --- 3. LÉPÉS: CSAK A LEGVÉGÉN INICIALIZÁLJUK A KLIENSEKET A MÁR LÉTEZŐ VÁLTOZÓKKAL ---
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-q_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 # JWT token generálása
 def create_access_token(data: dict):
