@@ -16,20 +16,19 @@ from fastapi.responses import RedirectResponse
 from fastapi import BackgroundTasks
 from db_feltoltes import process_and_upload
 from fastapi import Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from jose import jwt
 from datetime import datetime, timedelta
 
+# --- 1. LÉPÉS: LÉTREHOZZUK AZ APP-OT ÉS AZONNAL BETÖLTJÜK A .ENV FÁJLT ---
 app = FastAPI()
-
 load_dotenv()
 
 origins = [
-    "https://review-agent.agency", # Az új domained www nélkül
-    "https://www.review-agent.agency", # És www-vel is biztos ami biztos
+    "https://review-agent.agency", 
+    "https://www.review-agent.agency", 
     "http://localhost:8000"
 ]
 
@@ -41,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Konfiguráció ---
+# --- 2. LÉPÉS: BEOLVASSUK A KÖRNYEZETI VÁLTOZÓKAT (Most már biztonságosan léteznek) ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
@@ -55,6 +54,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
+# --- 3. LÉPÉS: CSAK A LEGVÉGÉN INICIALIZÁLJUK A KLIENSEKET A MÁR LÉTEZŐ VÁLTOZÓKKAL ---
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+q_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 # JWT token generálása
 def create_access_token(data: dict):
@@ -83,9 +85,6 @@ async def get_current_business_id(request: Request):
     except:
         raise HTTPException(status_code=401, detail="Érvénytelen vagy lejárt token!")
     
-# Kliensek inicializálása az új módon
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-q_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 class LoginRequest(BaseModel):
     email: str
