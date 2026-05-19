@@ -116,12 +116,15 @@ async def generate_response(
     if request.business_id != current_id:
         raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
     try:
-        # --- IDÁIG MINDEN JÓ, INNEN JÖN A DIAGNOSZTIKA ---
+        # --- KÖRNYEZETI VÁLTOZÓK BIZTONSÁGOS ELLENŐRZÉSE ---
         print("\n" + "!"*40)
-        print("!!! MOST FUT A JAVÍTOTT GENERATE VÉGPONT !!!")
-        print(f"!!! q_client NYERS TÍPUSA: {type(q_client)}")
+        print("!!! RENDERS KÖRNYEZETI VÁLTOZÓK ELLENŐRZÉSE !!!")
+        print(f"!!! QDRANT_URL ÉRTÉKE: {repr(QDRANT_URL)}")
+        print(f"!!! QDRANT_URL HOSSZA: {len(QDRANT_URL) if QDRANT_URL else 0}")
+        print(f"!!! QDRANT_API_KEY LÉTEZIK-E: {bool(QDRANT_API_KEY)}")
+        print(f"!!! QDRANT_API_KEY HOSSZA: {len(QDRANT_API_KEY) if QDRANT_API_KEY else 0}")
         print("!"*40 + "\n")
-        # -------------------------------------------------
+        
         # 1. Cégadatok lekérése SQL-ből
         business = db.query(models.Business).filter(models.Business.id == request.business_id).first()
         
