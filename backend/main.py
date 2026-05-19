@@ -124,7 +124,7 @@ async def generate_response(
         print(f"!!! QDRANT_API_KEY LÉTEZIK-E: {bool(QDRANT_API_KEY)}")
         print(f"!!! QDRANT_API_KEY HOSSZA: {len(QDRANT_API_KEY) if QDRANT_API_KEY else 0}")
         print("!"*40 + "\n")
-        
+
         # 1. Cégadatok lekérése SQL-ből
         business = db.query(models.Business).filter(models.Business.id == request.business_id).first()
         
@@ -135,10 +135,10 @@ async def generate_response(
         embedding_res = gemini_client.models.embed_content(model="gemini-embedding-001", contents=request.review_text)
         query_vector = embedding_res.embeddings[0].values
 
-        # 3. RAG keresés a reviews gyűjteményben business_id szűréssel
-        search_result = q_client.search(
+        # 3. RAG keresés a reviews gyűjteményben business_id szűréssel (Új Qdrant API verzió szerint)
+        query_response = q_client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
+            query=query_vector,  # Az új verzióban 'query' kell 'query_vector' helyett!
             query_filter=q_models.Filter(
                 must=[
                     q_models.FieldCondition(
@@ -149,6 +149,7 @@ async def generate_response(
             ),
             limit=3
         )
+        search_result = query_response.points  # Kivesszük a pontok listáját a válaszból
         
         # 4. Kontextus összefűzése (Tiszta változónévvel, ami nem ütközik semmivel)
         context = ""
