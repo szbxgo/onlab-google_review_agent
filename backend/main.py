@@ -1,6 +1,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
+from backend.db_feltoltes import process_and_upload
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -135,20 +136,20 @@ async def generate_response(
         embedding_res = gemini_client.models.embed_content(model="gemini-embedding-001", contents=request.review_text)
         query_vector = embedding_res.embeddings[0].values
 
-        # 3. RAG keresés a reviews gyűjteményben business_id szűréssel (Visszaállítva a stabil verzióra)
-        search_result = q_client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=q_models.Filter(
-                must=[
-                    q_models.FieldCondition(
-                        key="business_id",
-                        match=q_models.MatchValue(value=request.business_id),
-                    )
-                ]
-            ),
-            limit=3
-        )
+        # 3. RAG keresés a reviews gyűjteményben query_points használatával
+        search_result = q_client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        query_filter=q_models.Filter(
+            must=[
+                q_models.FieldCondition(
+                    key="business_id",
+                    match=q_models.MatchValue(value=request.business_id),
+                )
+            ]
+        ),
+         limit=3
+        ).points
         
         # 4. Kontextus összefűzése (Tiszta változónévvel, ami nem ütközik semmivel)
         context = ""
@@ -575,7 +576,7 @@ def perform_google_sync(business_id: int):
                 db.add(new_review)
                 db.commit()
 
-                # Vektorizálás és Qdrant feltöltés a meglévő logikáddal
+               # Vektorizálás és Qdrant feltöltés meghívása
                 process_and_upload(
                     business_id=business.id,
                     review_text=new_review.text,
