@@ -120,6 +120,12 @@ async def generate_response(
     if request.business_id != current_id:
         raise HTTPException(status_code=403, detail="Nincs jogosultságod ehhez a céghez!")
     try:
+        # --- IDÁIG MINDEN JÓ, INNEN JÖN A DIAGNOSZTIKA ---
+        print("\n" + "!"*40)
+        print("!!! MOST FUT A JAVÍTOTT GENERATE VÉGPONT !!!")
+        print(f"!!! q_client NYERS TÍPUSA: {type(q_client)}")
+        print("!"*40 + "\n")
+        # -------------------------------------------------
         # 1. Cégadatok lekérése SQL-ből
         business = db.query(models.Business).filter(models.Business.id == request.business_id).first()
         
