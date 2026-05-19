@@ -1,7 +1,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
-from backend.db_feltoltes import process_and_upload
+from db_feltoltes import process_and_upload
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
