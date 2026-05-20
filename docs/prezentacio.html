@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewAgent - Applied AI a KKV szektorban</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* PPT MAKER CORE ENGINE - Strict Slide Formatting */
+        * { box-sizing: border-box; }
+        body { background-color: #111827; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
+        
+        .slide-container {
+            width: 1280px;
+            height: 720px;
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Urbanist', sans-serif;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 50px 70px;
+            margin-bottom: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid #1f2937;
+        }
+
+        /* Background Design: Gradient Blobs & Flowing Lines */
+        .slide-container::before {
+            content: '';
+            position: absolute;
+            top: -20%; right: -10%;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .slide-container::after {
+            content: '';
+            position: absolute;
+            bottom: 40px; left: 70px; right: 70px;
+            height: 1px;
+            background: linear-gradient(to right, #2563eb, transparent);
+            opacity: 0.3;
+        }
+
+        .slide-container > * { position: relative; z-index: 1; }
+
+        /* Typography & Hierarchy */
+        h1 { font-size: 85px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -2px; }
+        h1 span { color: #3b82f6; }
+        .slide-title { font-size: 48px; font-weight: 700; color: #fff; margin-bottom: 35px; border-left: 8px solid #3b82f6; padding-left: 25px; text-transform: uppercase; letter-spacing: 1px; }
+        h3 { font-size: 34px; color: #60a5fa; margin-bottom: 20px; font-weight: 500; }
+        p, li { font-size: 21px; line-height: 1.5; color: #9ca3af; }
+        strong { color: #e5e7eb; }
+        code { font-family: 'JetBrains Mono', monospace; background: #1f2937; padding: 3px 8px; border-radius: 4px; color: #fbbf24; font-size: 0.9em; }
+
+        .content-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; }
+
+        /* Layout Modules */
+        .two-column { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; width: 100%; align-items: start; }
+        .tiled-content { display: flex; gap: 25px; width: 100%; }
+        .tile { flex: 1; background: #111827; padding: 35px; border-radius: 24px; border: 1px solid #374151; transition: border 0.3s; }
+        .tile:hover { border-color: #3b82f6; }
+        .tile .icon { font-size: 45px; color: #3b82f6; margin-bottom: 25px; }
+
+        .image-wrapper { border-radius: 20px; overflow: hidden; height: 420px; border: 2px solid #1f2937; background: #000; }
+        .image-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+
+        .bullet-list { list-style: none; padding: 0; }
+        .bullet-list li { margin-bottom: 18px; padding-left: 45px; position: relative; }
+        .bullet-list li::before { content: '\f05d'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; left: 0; color: #3b82f6; font-size: 24px; }
+
+        /* Timeline Styles */
+        .timeline { display: flex; justify-content: space-between; position: relative; margin-top: 50px; }
+        .timeline::before { content: ''; position: absolute; top: 30px; left: 0; right: 0; height: 2px; background: #374151; }
+        .timeline-step { text-align: center; width: 22%; position: relative; }
+        .timeline-dot { width: 16px; height: 16px; background: #3b82f6; border-radius: 50%; margin: 22px auto; box-shadow: 0 0 15px #3b82f6; }
+        .timeline-step h4 { color: #fff; margin-bottom: 10px; font-size: 22px; }
+
+        /* Highlight Numbers */
+        .stats-grid { display: flex; gap: 50px; align-items: center; }
+        .stat-value { font-size: 120px; font-weight: 700; color: #3b82f6; font-family: 'JetBrains Mono'; line-height: 1; }
+    </style>
+</head>
+<body>
+
+<div class="slide-container" id="slide1">
+    <div class="content-area" style="text-align: center;">
+        <div style="margin-bottom: 20px; color: #3b82f6; font-family: 'JetBrains Mono'; letter-spacing: 3px;">2025-2026 TAVASZI FÉLÉV</div>
+        <h1>Review<span>Agent</span></h1>
+        <p style="font-size: 32px; color: #9ca3af; margin-top: 20px;">Önálló Laboratórium: Alkalmazott MI, LLM és RAG architektúrák</p>
+        <div style="margin-top: 100px; display: flex; justify-content: center; gap: 100px;">
+            <div style="text-align: left;">
+                <p style="margin: 0; font-size: 18px; color: #6b7280;">HALLGATÓ</p>
+                <p style="font-weight: 700; color: #fff; font-size: 24px;">Szabó Bálint</p>
+            </div>
+            <div style="text-align: left;">
+                <p style="margin: 0; font-size: 18px; color: #6b7280;">KONZULENS</p>
+                <p style="font-weight: 700; color: #fff; font-size: 24px;">Dr. Ekler Péter</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide2">
+    <div class="content-area" style="text-align: center;">
+        <h2 style="font-size: 80px; letter-spacing: -2px;">Feladat és <span>Aktualitás</span></h2>
+        <p style="font-size: 28px; max-width: 800px; margin: 30px auto;">A modern KKV szektor legnagyobb kihívása: az online hírnév kezelése skálázható és hiteles módon.</p>
+        <div style="width: 150px; height: 4px; background: #3b82f6; margin: 40px auto;"></div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide3">
+    <h2 class="slide-title">A megoldandó problémakör</h2>
+    <div class="content-area">
+        <div class="two-column">
+            <div class="bullet-list">
+                <ul>
+                    <li><strong>Google Business dominancia:</strong> A helyi SEO motorja a felhasználói értékelés.</li>
+                    <li><strong>Erőforrás korlátok:</strong> A manuális válaszadás lassú és költséges.</li>
+                    <li><strong>Hallucinációs kockázat:</strong> A hagyományos LLM válaszok gyakran pontatlanok.</li>
+                    <li><strong>Márkaidentitás:</strong> Az általános sablonválaszok rontják a bizalmat.</li>
+                </ul>
+            </div>
+            <div class="tile" style="background: rgba(37, 99, 235, 0.05); border: 1px dashed #3b82f6;">
+                <h3>Célkitűzés</h3>
+                <p>Egy olyan <strong>Agentic AI</strong> megoldás fejlesztése, amely <strong>RAG</strong> technológiával biztosítja a tényalapú és stílushű válaszadást.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide4">
+    <h2 class="slide-title">A félév ütemezése</h2>
+    <div class="content-area">
+        <div class="timeline">
+            <div class="timeline-step">
+                <h4>Kutatás</h4>
+                <div class="timeline-dot"></div>
+                <p>LLM modellek tesztelése (DeepSeek, Gemma, Gemini).</p>
+            </div>
+            <div class="timeline-step">
+                <h4>MI Architektúra</h4>
+                <div class="timeline-dot"></div>
+                <p>Qdrant Cloud integráció és RAG pipeline kiépítése.</p>
+            </div>
+            <div class="timeline-step">
+                <h4>Full-Stack</h4>
+                <div class="timeline-dot"></div>
+                <p>FastAPI backend és Tailwind dashboard fejlesztése.</p>
+            </div>
+            <div class="timeline-step">
+                <h4>Optimalizálás</h4>
+                <div class="timeline-dot"></div>
+                <p>Biztonsági audit (JWT, IDOR) és Cloud Deploy.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide5">
+    <h2 class="slide-title">Felhasznált építőkockák</h2>
+    <div class="content-area">
+        <div class="tiled-content">
+            <div class="tile">
+                <div class="icon"><i class="fa-brands fa-python"></i></div>
+                <h3>Core Platform</h3>
+                <p>Python 3.12 és <strong>FastAPI</strong> aszinkron keretrendszer az API végpontokhoz.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-microchip"></i></div>
+                <h3>Generative AI</h3>
+                <p><strong>Google Gemini SDK</strong> (Flash 2.5) és 3072 dimenziós embedding modellek.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-cloud"></i></div>
+                <h3>Vektor Adatbázis</h3>
+                <p><strong>Qdrant Cloud</strong> a szemantikai kereséshez és kontextus tároláshoz.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide6">
+    <h2 class="slide-title">MI Architektúra</h2>
+    <div class="content-area">
+        <div class="two-column">
+            <div class="bullet-list">
+                <ul>
+                    <li><strong>Agentic AI Flow:</strong> Önálló döntéshozatali ciklus a válaszgenerálás során.</li>
+                    <li><strong>RAG Pipeline:</strong> Kereséssel kiterjesztett generálás a hallucinációk ellen.</li>
+                    <li><strong>Multi-tenant:</strong> Payload-alapú adatszeparáció a Qdrant gyűjteményekben.</li>
+                    <li><strong>Style Injection:</strong> Ügyfél-specifikus stílusirányelvek (Guideline) érvényesítése.</li>
+                </ul>
+            </div>
+            <div class="tile" style="background: #111827;">
+                <h3>Adatáramlás</h3>
+                <p style="font-size: 18px;">FastAPI (Kérés) &rarr; Gemini Embedding &rarr; Qdrant Vektorkeresés &rarr; Kontextus összeállítás &rarr; Gemini 2.5 Flash &rarr; Strukturált válasz.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide7">
+    <h2 class="slide-title">Vektorizálás és RAG</h2>
+    <div class="content-area">
+        <div class="stats-grid">
+            <div class="stat-value">3072</div>
+            <div>
+                <h3>Dimenziós Feature Táska</h3>
+                <p>A <code>gemini-embedding-001</code> modell segítségével minden véleményt sűrű vektorrá alakítunk. A Qdrant <strong>koszinusz-hasonlóság</strong> alapján találja meg a releváns múltbéli válaszokat.</p>
+            </div>
+        </div>
+        <div class="tile" style="margin-top: 40px; font-family: 'JetBrains Mono'; font-size: 16px; color: #60a5fa;">
+            context += f"\n- Korábbi eset: {hit.payload.get('review')}"
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide8">
+    <h2 class="slide-title">Kísérleti eredmények</h2>
+    <div class="content-area">
+        <div style="background: #111827; border-radius: 20px; overflow: hidden; border: 1px solid #374151;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: #1f2937; color: #fff;">
+                        <th style="padding: 20px;">Metrika</th>
+                        <th style="padding: 20px;">Lokális (Ollama)</th>
+                        <th style="padding: 20px;">Felhő (Gemini API)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #374151;">
+                        <td style="padding: 20px;">Válaszidő (TTFT)</td>
+                        <td style="padding: 20px;">~42.7 mp (Lassú)</td>
+                        <td style="padding: 20px;"><strong>&lt; 2.5 mp (Valós idejű)</strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #374151;">
+                        <td style="padding: 20px;">Magyar nyelvi minőség</td>
+                        <td style="padding: 20px;">Szintaktikai hibák</td>
+                        <td style="padding: 20px;"><strong>Natív nyelvi szint</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px;">Hardver igény</td>
+                        <td style="padding: 20px;">16GB RAM + Driver konfliktus</td>
+                        <td style="padding: 20px;"><strong>Zero-footprint</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide9">
+    <h2 class="slide-title">A megvalósított rendszer</h2>
+    <div class="content-area">
+        <div class="tiled-content">
+            <div class="tile" style="padding: 10px;">
+                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-chart-line" style="font-size: 60px; color: #3b82f6;"></i></div>
+                <p style="text-align: center; margin-top: 15px;">Interaktív AI Dashboard</p>
+            </div>
+            <div class="tile" style="padding: 10px;">
+                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-pie-chart" style="font-size: 60px; color: #3b82f6;"></i></div>
+                <p style="text-align: center; margin-top: 15px;">Vállalati Analytics modul</p>
+            </div>
+            <div class="tile" style="padding: 10px;">
+                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-lock" style="font-size: 60px; color: #3b82f6;"></i></div>
+                <p style="text-align: center; margin-top: 15px;">Biztonsági JWT Architektúra</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide10">
+    <h2 class="slide-title">Mérnöki kihívások és megoldások</h2>
+    <div class="content-area">
+        <div class="bullet-list">
+            <ul>
+                <li><strong>Docker Driver konfliktus:</strong> PCI/Chipset driver ütközések a WSL2 rétegben &rarr; <strong>Megoldás:</strong> Managed Qdrant Cloud.</li>
+                <li><strong>Lazy Loading csapda:</strong> Megtévesztő inicializálási hibák a felhő indításakor &rarr; <strong>Megoldás:</strong> Szigorú konfiguráció-beolvasási sorrend a kód szintjén.</li>
+                <li><strong>Változó API környezet:</strong> A Qdrant v1.16+ verzióváltás kezelése (<code>query_points</code> migráció).</li>
+                <li><strong>Google API Quota:</strong> Korlátozott API hozzáférés &rarr; <strong>Megoldás:</strong> Robusztus ETL pipeline fejlesztése szimulált adatokhoz.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide11">
+    <h2 class="slide-title">Jövőkép és MCP</h2>
+    <div class="content-area">
+        <div class="two-column">
+            <div class="tile">
+                <h3>Technológiai kiterjesztés</h3>
+                <p>A <strong>Model Context Protocol (MCP)</strong> integrációja, amellyel a rendszer képes lesz közvetlenül külső CRM rendszerekből (pl. Salesforce) is élő kontextust meríteni.</p>
+            </div>
+            <div class="tile">
+                <h3>SaaS Skálázódás</h3>
+                <ul style="color: #9ca3af; padding-left: 20px; font-size: 18px;">
+                    <li>Google App Verification megszerzése.</li>
+                    <li>Real-time Webhook értesítési rendszer.</li>
+                    <li>Multi-platform (Facebook, Trustpilot) támogatás.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide12">
+    <div class="content-area" style="text-align: center;">
+        <h2 style="font-size: 80px;">Köszönöm a <span>figyelmet!</span></h2>
+        <p style="font-size: 32px; color: #3b82f6; margin-top: 30px;">Kérdések és válaszok</p>
+        <div style="margin-top: 80px; border: 1px solid #374151; padding: 30px; display: inline-block; border-radius: 20px;">
+            <p style="margin: 5px;"><strong>Szabó Bálint</strong></p>
+            <p style="margin: 5px; font-family: 'JetBrains Mono'; font-size: 18px;">info@review-agent.agency</p>
+            <p style="margin: 5px; font-family: 'JetBrains Mono'; font-size: 18px;">https://review-agent.agency</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
