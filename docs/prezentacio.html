@@ -63,13 +63,18 @@
 
         /* Layout Modules */
         .two-column { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; width: 100%; align-items: start; }
+        
+        /* Kód bemutató grid */
+        .code-column { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 40px; align-items: center; }
+        .code-img { width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #374151; }
+
         .tiled-content { display: flex; gap: 25px; width: 100%; }
         .tile { flex: 1; background: #111827; padding: 35px; border-radius: 24px; border: 1px solid #374151; transition: border 0.3s; }
         .tile:hover { border-color: #3b82f6; }
         .tile .icon { font-size: 45px; color: #3b82f6; margin-bottom: 25px; }
 
-        .image-wrapper { border-radius: 20px; overflow: hidden; height: 420px; border: 2px solid #1f2937; background: #000; }
-        .image-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+        .image-wrapper { border-radius: 20px; overflow: hidden; height: 350px; border: 2px solid #1f2937; background: #000; position: relative; }
+        .image-wrapper img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
 
         .bullet-list { list-style: none; padding: 0; }
         .bullet-list li { margin-bottom: 18px; padding-left: 45px; position: relative; }
@@ -122,7 +127,7 @@
             <div class="bullet-list">
                 <ul>
                     <li><strong>Google Business dominancia:</strong> A helyi SEO motorja a felhasználói értékelés.</li>
-                    <li><strong>Erőforrás korlátok:</strong> A manuális válaszadás lassú és költséges.</li>
+                    <li><strong>Erőforrás korlátok:</strong> A manuális válaszadás lassú és költséges (pl. szerelők esetében nincs idő).</li>
                     <li><strong>Hallucinációs kockázat:</strong> A hagyományos LLM válaszok gyakran pontatlanok.</li>
                     <li><strong>Márkaidentitás:</strong> Az általános sablonválaszok rontják a bizalmat.</li>
                 </ul>
@@ -195,7 +200,7 @@
                     <li><strong>Agentic AI Flow:</strong> Önálló döntéshozatali ciklus a válaszgenerálás során.</li>
                     <li><strong>RAG Pipeline:</strong> Kereséssel kiterjesztett generálás a hallucinációk ellen.</li>
                     <li><strong>Multi-tenant:</strong> Payload-alapú adatszeparáció a Qdrant gyűjteményekben.</li>
-                    <li><strong>Style Injection:</strong> Ügyfél-specifikus stílusirányelvek (Guideline) érvényesítése.</li>
+                    <li><strong>Style Injection:</strong> Ügyfél-specifikus stílusirányelvek érvényesítése.</li>
                 </ul>
             </div>
             <div class="tile" style="background: #111827;">
@@ -207,22 +212,86 @@
 </div>
 
 <div class="slide-container" id="slide7">
-    <h2 class="slide-title">Vektorizálás és RAG</h2>
-    <div class="content-area">
-        <div class="stats-grid">
-            <div class="stat-value">3072</div>
-            <div>
-                <h3>Dimenziós Feature Táska</h3>
-                <p>A <code>gemini-embedding-001</code> modell segítségével minden véleményt sűrű vektorrá alakítunk. A Qdrant <strong>koszinusz-hasonlóság</strong> alapján találja meg a releváns múltbéli válaszokat.</p>
+    <h2 class="slide-title">Vektorizálás (Matematikai kontextus)</h2>
+    <div class="content-area code-column">
+        <div>
+            <div class="stats-grid" style="margin-bottom: 30px;">
+                <div class="stat-value" style="font-size: 80px;">3072</div>
+                <div>
+                    <h3 style="margin-bottom: 5px;">Dimenzió</h3>
+                    <p style="font-size: 18px; margin-top: 0;">A <code>gemini-embedding</code> kimenete.</p>
+                </div>
             </div>
+            <p>A szövegeket sűrű vektorrá alakítjuk. A Qdrant <strong>koszinusz-hasonlóság</strong> alapján találja meg a releváns múltbéli válaszokat a felhőben.</p>
         </div>
-        <div class="tile" style="margin-top: 40px; font-family: 'JetBrains Mono'; font-size: 16px; color: #60a5fa;">
-            context += f"\n- Korábbi eset: {hit.payload.get('review')}"
+        <div>
+            <img src="kepek/json.png" class="code-img" alt="Qdrant JSON Payload Struktúra">
         </div>
     </div>
 </div>
 
 <div class="slide-container" id="slide8">
+    <h2 class="slide-title">Megvalósítás (1/4): Hitelesítés és Vektorizálás</h2>
+    <div class="content-area code-column">
+        <div>
+            <ul class="bullet-list">
+                <li><strong>Aszinkron API:</strong> A végpont fogadja a requestet, és szigorúan ellenőrzi az aktuális <code>business_id</code> jogosultságot.</li>
+                <li><strong>Azonnali Embedding:</strong> Az ügyfél értékelését a Google API vektorizálja a kereséshez.</li>
+            </ul>
+        </div>
+        <div>
+            <img src="kepek/1resz.png" class="code-img" alt="Hitelesítés és vektorizálás kódja">
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide9">
+    <h2 class="slide-title">Megvalósítás (2/4): Multi-tenant Keresés</h2>
+    <div class="content-area code-column">
+        <div>
+            <ul class="bullet-list">
+                <li><strong>Payload Filtering:</strong> A keresést egy <code>FieldCondition</code> kizárólag a lekérdező cég adataira korlátozza.</li>
+                <li><strong>O(1) Adatbiztonság:</strong> A Qdrant a hash-alapú szűrést a matematikai vektorkeresés <em>előtt</em> hajtja végre (Nincs átszivárgás).</li>
+            </ul>
+        </div>
+        <div>
+            <img src="kepek/carbon.png" class="code-img" alt="Qdrant biztonságos keresés kódja">
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide10">
+    <h2 class="slide-title">Megvalósítás (3/4): Biztonsági Architektúra</h2>
+    <div class="content-area code-column">
+        <div>
+            <ul class="bullet-list">
+                <li><strong>XSS Védelem (HttpOnly):</strong> A tokeneket nem a sebezhető localStorage-ban, hanem <code>HttpOnly</code> és <code>Secure</code> flagekkel ellátott sütikben tároljuk.</li>
+                <li><strong>Állapotmentes JWT:</strong> Minden API hívásnál a backend middleware fejti vissza a tokent, kizárva az illetéktelen (IDOR) hozzáférést.</li>
+            </ul>
+        </div>
+        <div>
+            <img src="kepek/7.6.png" class="code-img" alt="Biztonságos JWT Token kezelés">
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide11">
+    <h2 class="slide-title">Megvalósítás (4/4): Prompt & Generálás</h2>
+    <div class="content-area code-column">
+        <div>
+            <ul class="bullet-list">
+                <li><strong>Dinamikus Injekció:</strong> A cég stílusirányelve és a visszakapott példák beoltása a System Prompt-ba.</li>
+                <li><strong>Agentic LLM Hívás:</strong> A Gemini 2.5 Flash a tényadatok alapján hallucinációmentes választervezetet ír.</li>
+                <li><strong>Perzisztencia:</strong> Az eredmény mentődik a PostgreSQL adatbázisba.</li>
+            </ul>
+        </div>
+        <div>
+            <img src="kepek/7.5.png" class="code-img" alt="Generálás kódja">
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide12">
     <h2 class="slide-title">Kísérleti eredmények</h2>
     <div class="content-area">
         <div style="background: #111827; border-radius: 20px; overflow: hidden; border: 1px solid #374151;">
@@ -230,7 +299,7 @@
                 <thead>
                     <tr style="background: #1f2937; color: #fff;">
                         <th style="padding: 20px;">Metrika</th>
-                        <th style="padding: 20px;">Lokális (Ollama)</th>
+                        <th style="padding: 20px;">Lokális (Ollama - 9B)</th>
                         <th style="padding: 20px;">Felhő (Gemini API)</th>
                     </tr>
                 </thead>
@@ -248,7 +317,7 @@
                     <tr>
                         <td style="padding: 20px;">Hardver igény</td>
                         <td style="padding: 20px;">16GB RAM + Driver konfliktus</td>
-                        <td style="padding: 20px;"><strong>Zero-footprint</strong></td>
+                        <td style="padding: 20px;"><strong>Zero-footprint SaaS</strong></td>
                     </tr>
                 </tbody>
             </table>
@@ -256,53 +325,69 @@
     </div>
 </div>
 
-<div class="slide-container" id="slide9">
-    <h2 class="slide-title">A megvalósított rendszer</h2>
+<div class="slide-container" id="slide13">
+    <h2 class="slide-title">A megvalósított GUI Rendszer (1/3)</h2>
     <div class="content-area">
-        <div class="tiled-content">
-            <div class="tile" style="padding: 10px;">
-                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-chart-line" style="font-size: 60px; color: #3b82f6;"></i></div>
-                <p style="text-align: center; margin-top: 15px;">Interaktív AI Dashboard</p>
-            </div>
-            <div class="tile" style="padding: 10px;">
-                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-pie-chart" style="font-size: 60px; color: #3b82f6;"></i></div>
-                <p style="text-align: center; margin-top: 15px;">Vállalati Analytics modul</p>
-            </div>
-            <div class="tile" style="padding: 10px;">
-                <div class="image-wrapper" style="height: 250px; background-color: #1e293b; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-lock" style="font-size: 60px; color: #3b82f6;"></i></div>
-                <p style="text-align: center; margin-top: 15px;">Biztonsági JWT Architektúra</p>
+        <div class="tile" style="padding: 25px; text-align: center; border: 1px solid #3b82f6;">
+            <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 28px; color: #fff;">AI Dashboard és Irányítópult</h3>
+            <div class="image-wrapper" style="height: 450px;">
+                <img src="kepek/iranyitopult.png" alt="Irányítópult">
             </div>
         </div>
     </div>
 </div>
 
-<div class="slide-container" id="slide10">
+<div class="slide-container" id="slide14">
+    <h2 class="slide-title">A megvalósított GUI Rendszer (2/3)</h2>
+    <div class="content-area">
+        <div class="tile" style="padding: 25px; text-align: center; border: 1px solid #3b82f6;">
+            <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 28px; color: #fff;">Összes Vélemény Kezelése</h3>
+            <div class="image-wrapper" style="height: 450px;">
+                <img src="kepek/Velemenyekosszes.png" alt="Összes vélemény">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide15">
+    <h2 class="slide-title">A megvalósított GUI Rendszer (3/3)</h2>
+    <div class="content-area">
+        <div class="tile" style="padding: 25px; text-align: center; border: 1px solid #3b82f6;">
+            <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 28px; color: #fff;">Vállalati Analitika Modul</h3>
+            <div class="image-wrapper" style="height: 450px;">
+                <img src="kepek/analitika.png" alt="Analitika">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide16">
     <h2 class="slide-title">Mérnöki kihívások és megoldások</h2>
     <div class="content-area">
         <div class="bullet-list">
             <ul>
                 <li><strong>Docker Driver konfliktus:</strong> PCI/Chipset driver ütközések a WSL2 rétegben &rarr; <strong>Megoldás:</strong> Managed Qdrant Cloud.</li>
-                <li><strong>Lazy Loading csapda:</strong> Megtévesztő inicializálási hibák a felhő indításakor &rarr; <strong>Megoldás:</strong> Szigorú konfiguráció-beolvasási sorrend a kód szintjén.</li>
-                <li><strong>Változó API környezet:</strong> A Qdrant v1.16+ verzióváltás kezelése (<code>query_points</code> migráció).</li>
-                <li><strong>Google API Quota:</strong> Korlátozott API hozzáférés &rarr; <strong>Megoldás:</strong> Robusztus ETL pipeline fejlesztése szimulált adatokhoz.</li>
+                <li><strong>Változó API környezet:</strong> A Qdrant v1.16+ verzióváltás miatt eltűnt a <code>.search()</code> &rarr; <strong>Megoldás:</strong> Migráció az új <code>query_points()</code> API-ra.</li>
+                <li><strong>Google API Quota (Quota 0):</strong> Korlátozott API hozzáférés nem hitelesített appként &rarr; <strong>Megoldás:</strong> Robusztus ETL pipeline fejlesztése szimulált adatokhoz a vektortér feltöltésére.</li>
+                <li><strong>Render.com Deployment:</strong> Port-scanner timeout hibák &rarr; <strong>Megoldás:</strong> Explicit 10000-es port binding és Build Cache törlés.</li>
             </ul>
         </div>
     </div>
 </div>
 
-<div class="slide-container" id="slide11">
+<div class="slide-container" id="slide17">
     <h2 class="slide-title">Jövőkép és MCP</h2>
     <div class="content-area">
         <div class="two-column">
             <div class="tile">
                 <h3>Technológiai kiterjesztés</h3>
-                <p>A <strong>Model Context Protocol (MCP)</strong> integrációja, amellyel a rendszer képes lesz közvetlenül külső CRM rendszerekből (pl. Salesforce) is élő kontextust meríteni.</p>
+                <p>A <strong>Model Context Protocol (MCP)</strong> integrációja, amellyel a rendszer képes lesz közvetlenül külső CRM rendszerekből (pl. belső adatbázisok) is élő kontextust meríteni.</p>
             </div>
             <div class="tile">
                 <h3>SaaS Skálázódás</h3>
                 <ul style="color: #9ca3af; padding-left: 20px; font-size: 18px;">
-                    <li>Google App Verification megszerzése.</li>
-                    <li>Real-time Webhook értesítési rendszer.</li>
+                    <li style="margin-bottom: 10px;">Hivatalos Google App Verification.</li>
+                    <li style="margin-bottom: 10px;">Real-time Webhook értesítési rendszer.</li>
                     <li>Multi-platform (Facebook, Trustpilot) támogatás.</li>
                 </ul>
             </div>
@@ -310,14 +395,14 @@
     </div>
 </div>
 
-<div class="slide-container" id="slide12">
+<div class="slide-container" id="slide18">
     <div class="content-area" style="text-align: center;">
         <h2 style="font-size: 80px;">Köszönöm a <span>figyelmet!</span></h2>
         <p style="font-size: 32px; color: #3b82f6; margin-top: 30px;">Kérdések és válaszok</p>
-        <div style="margin-top: 80px; border: 1px solid #374151; padding: 30px; display: inline-block; border-radius: 20px;">
-            <p style="margin: 5px;"><strong>Szabó Bálint</strong></p>
-            <p style="margin: 5px; font-family: 'JetBrains Mono'; font-size: 18px;">info@review-agent.agency</p>
-            <p style="margin: 5px; font-family: 'JetBrains Mono'; font-size: 18px;">https://review-agent.agency</p>
+        <div style="margin-top: 80px; border: 1px solid #374151; padding: 30px; display: inline-block; border-radius: 20px; background: rgba(17, 24, 39, 0.8);">
+            <p style="margin: 5px; font-size: 28px; color: #fff;"><strong>Szabó Bálint</strong></p>
+            <p style="margin: 5px; font-family: 'JetBrains Mono'; font-size: 18px; color: #9ca3af;">MSc Mérnökinformatikus hallgató</p>
+            <p style="margin: 15px 5px 5px 5px; font-family: 'JetBrains Mono'; font-size: 18px; color: #60a5fa;"><i class="fa-solid fa-link"></i> https://review-agent.agency</p>
         </div>
     </div>
 </div>
